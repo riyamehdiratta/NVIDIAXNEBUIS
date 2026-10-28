@@ -1,8 +1,10 @@
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 
 ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(ROOT / ".env", override=False)
 DATA_DIR = Path(os.getenv("THREADLINE_DATA_DIR", ROOT / "data")).resolve()
 DB_PATH = DATA_DIR / "threadline.db"
 IMPORT_DIR = Path(os.getenv("THREADLINE_IMPORT_DIR", DATA_DIR / "imports")).resolve()

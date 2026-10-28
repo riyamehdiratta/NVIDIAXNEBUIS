@@ -13,12 +13,13 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from .agent import call_nebius, heuristic_extract, make_prompt, model_request, record_egress, _model_for
-from .autonomy import shadow_prediction, shadow_summary
-from .config import API_KEY, IMPORT_DIR, NANO_MODEL, SUPER_MODEL
+from .autonomy import can_execute_automatically, shadow_prediction, shadow_summary
+from .config import API_KEY, DEMO_MODE, IMPORT_DIR, NANO_MODEL, SUPER_MODEL
 from .contracts import compile_quiet_hours, is_quiet
 from .db import connect, json_value, now_iso, rowdict
 from .parsers import parse_source
 from .scam import inspect_message
+from .simulation import simulate_week
 from .schemas import ActionRequest, AutonomyControlRequest, DecisionRequest, FamilyProfileRequest, FamilyVerifyRequest, PolicyRequest, QuietHoursContractRequest, ScamCheckRequest, ScanRequest, SkillRequest, TextSource
 
 
@@ -30,6 +31,11 @@ ACTION_LABELS = {"create_reminder": "Create reminder", "draft_reply": "Draft rep
 def _log(kind, detail):
     with connect() as db:
         db.execute("INSERT INTO activity(id,event_type,detail,created_at) VALUES(?,?,?,?)", (str(uuid4()), kind, detail, now_iso()))
+
+
+def _guard_public_demo_ingest():
+    if DEMO_MODE:
+        raise HTTPException(403, "Uploads are disabled in the synthetic-data demo. Use the sample workspace.")
 
 
 def _quiet_contract(db, action_type, moment=None):
@@ -80,7 +86,8 @@ def health():
     with connect() as db:
         loops = db.execute("SELECT COUNT(*) FROM loops WHERE status='open'").fetchone()[0]
         sources = db.execute("SELECT COUNT(*) FROM sources").fetchone()[0]
-    return {"ok": True, "product": "Threadline", "api_key_configured": bool(API_KEY), "model": NANO_MODEL, "open_loops": loops, "sources": sources}
+    return {"ok": True, "product": "Threadline", "api_key_configured": bool(API_KEY), "demo_mode": DEMO_MODE,
+            "uploads_enabled": not DEMO_MODE, "model": NANO_MODEL, "open_loops": loops, "sources": sources}
 
 
 @router.get("/dashboard")
@@ -113,6 +120,7 @@ def source_detail(source_id: str):
 
 @router.post("/sources/text")
 def add_text(body: TextSource):
+    _guard_public_demo_ingest()
     kind, title, content = parse_source(body.filename, body.text.encode("utf-8"))
     source_id, created = _store_source(body.filename, kind, title, content)
     return {"id": source_id, "created": created}
@@ -120,6 +128,7 @@ def add_text(body: TextSource):
 
 @router.post("/sources")
 async def add_file(file: UploadFile = File(...)):
+    _guard_public_demo_ingest()
     filename = Path(file.filename or "upload.txt").name
     raw = await file.read(2_000_001)
     if len(raw) > 2_000_000:
@@ -437,6 +446,27 @@ def egress():
     return result
 
 
+@router.get("/egress/summary")
+def egress_summary():
+    with connect() as db:
+        row = db.execute("""
+            SELECT COUNT(*) AS attempts,
+                   SUM(CASE WHEN status='sent' THEN 1 ELSE 0 END) AS sent,
+                   SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) AS failed,
+                   SUM(CASE WHEN status='sending' THEN 1 ELSE 0 END) AS in_flight,
+                   SUM(redacted_fields) AS redaction_matches,
+                   SUM(LENGTH(payload)) AS payload_characters
+            FROM egress_events
+        """).fetchone()
+        local_scans = db.execute("SELECT COUNT(*) FROM activity WHERE event_type='scan_completed' AND detail LIKE '%Local-only extraction%'").fetchone()[0]
+    return {**dict(row), "attempts": row["attempts"] or 0, "sent": row["sent"] or 0,
+            "failed": row["failed"] or 0, "in_flight": row["in_flight"] or 0,
+            "redaction_matches": row["redaction_matches"] or 0,
+            "payload_characters": row["payload_characters"] or 0,
+            "local_only_scans": local_scans, "source_files_uploaded": 0,
+            "note": "Original files are not uploaded as attachments. Confirmed requests send minimized text shown in the receipt; redaction matches count pattern replacements, not guaranteed removed identities."}
+
+
 @router.post("/scam/check")
 def scam_check(body: ScamCheckRequest):
     result = inspect_message(body.message)
@@ -598,7 +628,8 @@ def propose_action(body: ActionRequest):
         auto_count = db.execute("SELECT COUNT(*) FROM actions WHERE execution_mode='autonomous' AND status IN ('completed','undone') AND created_at>=? AND action_type=?", (day_start, body.action_type)).fetchone()[0]
         reversible = body.action_type in {"create_reminder", "draft_reply"}
         contract = _quiet_contract(db, body.action_type)
-        can_auto = (autonomy_enabled and not policy["shadow_mode"] and not contract and reversible and policy["autonomy_level"] >= 2 and auto_count < policy["max_actions_per_day"])
+        can_auto = (not contract and can_execute_automatically(autonomy_enabled, bool(policy["shadow_mode"]), reversible,
+                                                               policy["autonomy_level"], auto_count, policy["max_actions_per_day"]))
         prediction = None
         if policy["shadow_mode"]:
             prediction = shadow_prediction(policy["approved_count"], policy["rejected_count"])
@@ -699,6 +730,11 @@ def load_demo():
         source_ids.append(sid)
     _log("demo_loaded", "Loaded four synthetic sample sources")
     return {"source_ids": source_ids}
+
+
+@router.post("/demo/simulated-week")
+def demo_simulated_week():
+    return simulate_week()
 
 
 @router.post("/demo/reset")

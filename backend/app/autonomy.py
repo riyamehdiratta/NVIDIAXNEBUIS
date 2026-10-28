@@ -6,6 +6,12 @@ MIN_SHADOW_SAMPLES = 40
 TARGET_WILSON_LOWER_BOUND = 0.80
 
 
+def can_execute_automatically(enabled: bool, shadow_mode: bool, reversible: bool,
+                              autonomy_level: int, daily_count: int, daily_cap: int) -> bool:
+    """Central rule for the local, reversible action allowlist."""
+    return bool(enabled and not shadow_mode and reversible and autonomy_level >= 2 and daily_count < daily_cap)
+
+
 def wilson_lower_bound(successes: int, samples: int, z: float = Z_95) -> float | None:
     """Return the 95% Wilson lower confidence bound for a Bernoulli rate."""
     if samples <= 0:

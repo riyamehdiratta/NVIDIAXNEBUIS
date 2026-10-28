@@ -68,6 +68,8 @@ docker compose up --build
 
 Open `http://localhost:8000`. Docker maps the app to loopback only and persists the SQLite database and import folder in `./data/`. The default hosted-style demo mode is off; click **Try the sample workspace** to add synthetic records.
 
+For a disposable synthetic-data build, use `docker compose -f docker-compose.demo.yml up --build`. Demo mode disables pasted/file imports and the watched-folder importer; its SQLite data lives in a temporary filesystem. Configure a Nebius key in `.env` only if you intend to enable confirmed model scans in that demo.
+
 ## Data and privacy
 
 - SQLite data and imported source text stay in the configured local data directory. This MVP does **not** encrypt that database itself; use device-level disk encryption and do not import sensitive data into a public demo.

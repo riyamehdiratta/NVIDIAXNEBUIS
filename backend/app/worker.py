@@ -6,7 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from .api import _store_source
-from .config import IMPORT_DIR, WATCH_IMPORTS
+from .config import DEMO_MODE, IMPORT_DIR, WATCH_IMPORTS
 from .db import connect, now_iso
 from .parsers import parse_source
 
@@ -18,7 +18,7 @@ async def background_worker(stop_event: asyncio.Event):
     IMPORT_DIR.mkdir(parents=True, exist_ok=True)
     last_review_day = None
     while not stop_event.is_set():
-        if WATCH_IMPORTS:
+        if WATCH_IMPORTS and not DEMO_MODE:
             for path in IMPORT_DIR.iterdir():
                 if not path.is_file() or path.suffix.lower() not in ALLOWED or path.stat().st_size > 2_000_000:
                     continue

@@ -1,0 +1,16 @@
+﻿services:
+  threadline-demo:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      THREADLINE_DEMO_MODE: "1"
+      THREADLINE_WATCH_IMPORTS: "0"
+      THREADLINE_DATA_DIR: /tmp/threadline-demo
+      THREADLINE_IMPORT_DIR: /tmp/threadline-demo/imports
+    tmpfs:
+      - /tmp/threadline-demo:rw,nosuid,nodev,size=64m
+    ports:
+      - "${THREADLINE_DEMO_BIND:-127.0.0.1}:${THREADLINE_DEMO_PORT:-8001}:8000"
+    restart: unless-stopped

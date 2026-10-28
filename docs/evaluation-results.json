@@ -1,0 +1,16 @@
+{
+  "dataset": {
+    "sources": 60,
+    "positive_sources": 30,
+    "negative_sources": 30,
+    "synthetic_only": true
+  },
+  "local_heuristic": {
+    "tp": 30,
+    "fp": 30,
+    "fn": 0,
+    "precision": 0.5,
+    "recall": 1.0,
+    "f1": 0.6666666666666666
+  }
+}

@@ -1,6 +1,6 @@
 # Threadline Software Requirements Specification
 
-**Version:** 0.6 | **Status:** Local autonomy, scam triage, quiet-hours precommitments, and interface text cleanup implemented; live model/runtime and public release pending | **Updated:** 2026-10-28
+**Version:** 0.8 | **Status:** Local autonomy, scam triage, precommitments, synthetic demo guard, seven-day replay, and local extraction evaluation implemented; live Token Factory/OpenShell proof and public hosting pending | **Updated:** 2026-10-28
 
 ## 1. Purpose and scope
 
@@ -26,6 +26,10 @@ Threadline keeps commitments from user-selected notes, email files, and calendar
 | FR-14 | Triage suspicious message text locally. | Explainable pressure signals and safety steps are returned; only a digest, length, and signal labels are stored, with zero model egress. |
 | FR-15 | Verify a trusted contact with a private phrase. | Phrase is PBKDF2 salted-hashed and never returned by profile APIs; verified and failed checks are logged locally. It is static in this iteration, so it must be shared through a trusted channel and is not a rotating challenge. |
 | FR-16 | Compile a supported plain-language quiet-hours precommitment. | Red-team boundary checks pass; the API checks active rules when proposing and approving actions, blocks automatic execution, and requires/logs a typed reason to override manually. |
+| FR-17 | Keep hosted demo ingestion synthetic-only. | With `THREADLINE_DEMO_MODE=1`, pasted/file imports return 403, the folder watcher is disabled, and only curated demo samples can be loaded. |
+| FR-18 | Show aggregate model data movement. | The privacy panel reports file attachments, request attempts, successful responses, regex redaction matches, local scans, and request payload characters; local-only scans produce no egress request. |
+| FR-19 | Replay earned autonomy over a synthetic week. | A seven-day replay uses the live Wilson/majority helper functions, presents the threshold evidence and an unearned approval-only example, and writes no workspace records. |
+| FR-20 | Measure local extraction on a labeled synthetic corpus. | A repeatable 60-source command reports source-level precision, recall, and F1 for local heuristics and offers an opt-in, explicitly confirmed Nebius comparison on synthetic data. |
 
 ## 3. Autonomy state and limits
 
@@ -42,7 +46,7 @@ Shadow mode uses an interpretable majority-choice baseline, not an LLM claim abo
 SQLite schema version 5 stores `sources`, `loops`, `skills`, `policies`, `actions`, `reminders`, `egress_events`, `scan_previews`, `daily_reviews`, `app_settings`, `scam_checks`, `family_profiles`, and `contracts`. Policies contain autonomy level, life area, shadow aggregates, and daily cap. Action rows store execution mode, policy level, shadow comparison, undo deadline, inverse receipt, applicable contract, and manual override reason.
 
 Main interfaces include `GET/PUT /api/policies/{action_type}`, `GET/PUT /api/autonomy`, `POST /api/actions/{id}/undo`, action proposal/decision routes, source/skill/loop routes, and the exact-preview scan routes.
-Quiet-hours precommitments use `GET/POST/DELETE /api/contracts`; supported rule text is intentionally narrow, and time windows use the application host's local clock.
+Quiet-hours precommitments use `GET/POST/DELETE /api/contracts`; supported rule text is intentionally narrow, and time windows use the application host's local clock. The aggregate egress panel uses `GET /api/egress/summary`; the non-persistent simulation uses `POST /api/demo/simulated-week`.
 
 ## 5. Privacy and safety
 
@@ -65,6 +69,8 @@ Quiet-hours precommitments use `GET/POST/DELETE /api/contracts`; supported rule 
 | 06 | Local scam triage and contact phrase verification | Implemented and locally verified | [Iteration 06](iterations/iteration-06.md) |
 | 07 | Ulysses quiet-hours precommitment compiler and API gate | Implemented and locally verified | [Iteration 07](iterations/iteration-07.md) |
 | 08 | UI encoding cleanup and user-facing feature inventory | Implemented; production frontend build passed | [Iteration 08](iterations/iteration-08.md) |
+| 09 | Live Token Factory/OpenShell proof and demo safety | Model IDs verified; demo ingestion gate implemented. Live inference awaits key; OpenShell install is in progress and policy proof is pending; repository is not publicly viewable yet | [Iteration 09](iterations/iteration-09.md) |
+| 10 | Simulated-week evidence and extraction evaluation | Local simulation, privacy totals, and 60-source heuristic evaluation implemented; Nemotron metrics await key | [Iteration 10](iterations/iteration-10.md) |
 
 ## 7. Known limits and next work
 
