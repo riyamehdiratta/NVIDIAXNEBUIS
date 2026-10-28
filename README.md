@@ -94,7 +94,7 @@ FastAPI ---- SQLite + local import watcher
 
 Backend modules are split by concern in `backend/app/`; the interface is split into workspace views and components in `frontend/src/`. Database schema changes are versioned through SQLite `user_version` migrations.
 
-See [the feature guide](docs/features.md), [SRS](docs/SRS.md), [architecture and runtime notes](docs/architecture.md), [research](docs/research.md), [iteration records](docs/iterations/), and the optional [OpenShell/NemoClaw runbook](infra/nemoclaw/README.md). The shadow predictor is a majority-choice baseline, not an LLM accuracy claim. No live Token Factory call or active OpenShell sandbox is claimed in this workspace.
+See [the feature guide](docs/features.md), [SRS](docs/SRS.md), [architecture and runtime notes](docs/architecture.md), [research](docs/research.md), [iteration records](docs/iterations/), and the optional [OpenShell/NemoClaw runbook](infra/nemoclaw/README.md). The shadow predictor is a majority-choice baseline, not an LLM accuracy claim. OpenShell 0.1.6 is installed with a local WSL gateway and its allow/deny enforcement has been exercised with synthetic traffic; this does not yet verify a Threadline Token Factory inference route. WSL2 + Docker Desktop remains an experimental OpenShell host combination.
 
 ## API overview
 

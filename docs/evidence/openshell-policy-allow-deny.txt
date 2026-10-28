@@ -1,0 +1,34 @@
+OpenShell runtime verification - 2026-10-29
+Host: Ubuntu WSL2 + Docker Desktop 28.5.1
+OpenShell CLI/gateway: 0.1.6; gateway mTLS healthy; Docker driver 0.1.6
+Policy: infra/openshell/verification-policy.yaml
+Sandbox images: alpine:3.20 and the repository-built Threadline image (synthetic connectivity check only)
+
+Command output:
+ALLOW_OK
+DENY_BLOCKED
+
+OpenShell policy log excerpt:
+NET:OPEN [INFO] ALLOWED /bin/busybox(0) -> example.com:80 [policy:allow_example engine:opa]
+HTTP:GET [INFO] ALLOWED GET http://example.com/ [policy:allow_example engine:l7]
+NET:REFUSE [MED] DENIED example.org [reason:policy_dns_ineligible]
+NET:OPEN [MED] DENIED /bin/busybox(0) -> example.org:80 [reason:transparent_tcp_policy_denied]
+
+Threadline Python binary under the same verification policy:
+ALLOW_OK example.com
+DENY_BLOCKED example.org URLError
+NET:OPEN [INFO] ALLOWED /usr/local/bin/python3.12(0) -> example.com:80 [policy:allow_example engine:opa]
+HTTP:GET [INFO] ALLOWED GET http://example.com/ [policy:allow_example engine:l7]
+NET:REFUSE [MED] DENIED example.org [reason:policy_dns_ineligible]
+NET:OPEN [MED] DENIED /usr/local/bin/python3.12(0) -> example.org:80 [reason:transparent_tcp_policy_denied]
+
+Threadline image check:
+- Image built from the repository Dockerfile as threadline:openshell-check.
+- Sandbox phase: Ready; policy source: sandbox; configuration accepted.
+- GET /api/health: HTTP 200; demo_mode=true; uploads_enabled=false; sources=4; api_key_configured=false.
+- Python's request to https://example.org was denied:
+  NET:REFUSE [MED] DENIED example.org [reason:policy_dns_ineligible]
+  NET:OPEN [MED] DENIED /usr/local/bin/python3.12(0) -> example.org:443 [reason:transparent_tcp_policy_denied]
+- Attempting https://inference.local/v1/models did not reach an upstream provider:
+  NET:REFUSE [LOW] DENIED inference.local [reason:policy_dns_upstream_timeout]
+  No Nebius key/provider was configured; no live model request was made.

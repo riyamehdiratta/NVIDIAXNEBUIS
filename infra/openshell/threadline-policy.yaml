@@ -1,8 +1,9 @@
 version: 1
 
 filesystem_policy:
-  include_workdir: true
+  include_workdir: false
   read_only:
+    - /bin
     - /usr
     - /lib
     - /etc
@@ -27,3 +28,4 @@ network_policies:
         access: full
     binaries:
       - path: /usr/local/bin/python
+      - path: /usr/local/bin/python3.12

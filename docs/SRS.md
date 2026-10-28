@@ -1,6 +1,6 @@
 # Threadline Software Requirements Specification
 
-**Version:** 0.9 | **Status:** Local autonomy, scam triage, precommitments, synthetic demo guard, seven-day replay, local extraction evaluation, and source-view runtime fix implemented; live Token Factory/OpenShell proof and public hosting pending | **Updated:** 2026-10-28
+**Version:** 1.2 | **Status:** Local autonomy, scam triage, precommitments, synthetic demo guard, seven-day replay, local extraction evaluation, source-view runtime fix, and OpenShell sandbox allow/deny verification implemented; live Token Factory inference and public hosting pending | **Updated:** 2026-10-29
 
 ## 1. Purpose and scope
 
@@ -31,6 +31,10 @@ Threadline keeps commitments from user-selected notes, email files, and calendar
 | FR-19 | Replay earned autonomy over a synthetic week. | A seven-day replay uses the live Wilson/majority helper functions, presents the threshold evidence and an unearned approval-only example, and writes no workspace records. |
 | FR-20 | Measure local extraction on a labeled synthetic corpus. | A repeatable 60-source command reports source-level precision, recall, and F1 for local heuristics and offers an opt-in, explicitly confirmed Nebius comparison on synthetic data. |
 | FR-21 | Render the source import guide without runtime errors. | The Sources view resolves all file-format icons and renders with both empty and populated source lists. |
+| FR-22 | Enforce runtime network allowlists outside the model. | OpenShell accepts the Threadline sandbox policy, permits the listed endpoint in a synthetic verification sandbox, and blocks an unlisted endpoint with a policy-denial log. |
+| FR-23 | Start the app container under the Threadline sandbox filesystem policy. | The container working directory is writable Threadline data, app code remains in `/app`, and Uvicorn starts with `/app` as its explicit import root. |
+
+Iteration evidence is maintained in [`docs/iterations/`](iterations/), with OpenShell runtime logs and health-check results in [`docs/evidence/`](evidence/).
 
 ## 3. Autonomy state and limits
 

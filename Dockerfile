@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 COPY backend/app /app/backend/app
 COPY --from=frontend-build /build/frontend/dist /app/frontend/dist
 RUN mkdir -p /var/lib/threadline/imports && useradd --create-home --uid 10001 threadline && chown -R threadline:threadline /var/lib/threadline
+WORKDIR /var/lib/threadline
 USER threadline
 EXPOSE 8000
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "--app-dir", "/app", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
