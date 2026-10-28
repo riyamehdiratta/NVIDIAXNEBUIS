@@ -1,6 +1,6 @@
 # Threadline Software Requirements Specification
 
-**Version:** 0.8 | **Status:** Local autonomy, scam triage, precommitments, synthetic demo guard, seven-day replay, and local extraction evaluation implemented; live Token Factory/OpenShell proof and public hosting pending | **Updated:** 2026-10-28
+**Version:** 0.9 | **Status:** Local autonomy, scam triage, precommitments, synthetic demo guard, seven-day replay, local extraction evaluation, and source-view runtime fix implemented; live Token Factory/OpenShell proof and public hosting pending | **Updated:** 2026-10-28
 
 ## 1. Purpose and scope
 
@@ -30,6 +30,7 @@ Threadline keeps commitments from user-selected notes, email files, and calendar
 | FR-18 | Show aggregate model data movement. | The privacy panel reports file attachments, request attempts, successful responses, regex redaction matches, local scans, and request payload characters; local-only scans produce no egress request. |
 | FR-19 | Replay earned autonomy over a synthetic week. | A seven-day replay uses the live Wilson/majority helper functions, presents the threshold evidence and an unearned approval-only example, and writes no workspace records. |
 | FR-20 | Measure local extraction on a labeled synthetic corpus. | A repeatable 60-source command reports source-level precision, recall, and F1 for local heuristics and offers an opt-in, explicitly confirmed Nebius comparison on synthetic data. |
+| FR-21 | Render the source import guide without runtime errors. | The Sources view resolves all file-format icons and renders with both empty and populated source lists. |
 
 ## 3. Autonomy state and limits
 

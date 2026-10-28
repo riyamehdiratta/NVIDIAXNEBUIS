@@ -1,4 +1,4 @@
-import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, ArrowUpRightFromSquare, Bell, BookOpenText, Check, CheckCheck, ChevronDown, ChevronRight, CircleHelp, Clock3, Download, FileClock, FilePlus2, FileText, Fingerprint, Inbox, KeyRound, LayoutDashboard, LoaderCircle, LockKeyhole, Menu, MessageSquareText, MoreHorizontal, Plus, Search, Settings2, ShieldAlert, ShieldCheck, Sparkles, Upload, WandSparkles, X } from 'lucide-react';
+import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, ArrowUpRightFromSquare, Bell, BookOpenText, Check, CheckCheck, ChevronDown, ChevronRight, CircleHelp, Clock3, Download, FileClock, FilePlus2, FileText, Fingerprint, Inbox, KeyRound, LayoutDashboard, LoaderCircle, LockKeyhole, Mail, Menu, MessageSquareText, MoreHorizontal, Plus, Search, Settings2, ShieldAlert, ShieldCheck, Sparkles, Upload, WandSparkles, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, post, put } from './api';
 import { ImportDialog } from './components/ImportDialog';
