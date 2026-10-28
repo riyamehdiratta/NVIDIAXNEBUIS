@@ -1,0 +1,29 @@
+version: 1
+
+filesystem_policy:
+  include_workdir: true
+  read_only:
+    - /usr
+    - /lib
+    - /etc
+    - /app
+    - /var/log
+  read_write:
+    - /var/lib/threadline
+    - /tmp
+
+landlock:
+  compatibility: hard_requirement
+
+network_policies:
+  # In a sandbox, point Threadline at the OpenShell/NemoClaw-managed
+  # inference.local route. Do not allow arbitrary Internet access.
+  model_inference:
+    endpoints:
+      - host: inference.local
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        access: full
+    binaries:
+      - path: /usr/local/bin/python

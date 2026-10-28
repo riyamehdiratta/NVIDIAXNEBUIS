@@ -1,0 +1,14 @@
+services:
+  threadline:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      THREADLINE_DATA_DIR: /var/lib/threadline
+      THREADLINE_IMPORT_DIR: /var/lib/threadline/imports
+    volumes:
+      - ./data:/var/lib/threadline
+    restart: unless-stopped
