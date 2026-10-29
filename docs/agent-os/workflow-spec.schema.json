@@ -1,0 +1,194 @@
+{
+  "$defs": {
+    "InputSpec": {
+      "properties": {
+        "type": {
+          "enum": [
+            "string",
+            "string_list",
+            "integer"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "max_length": {
+          "default": 500,
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Max Length",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "InputSpec",
+      "type": "object"
+    },
+    "WorkflowBudgets": {
+      "properties": {
+        "tokens": {
+          "default": 0,
+          "maximum": 100000,
+          "minimum": 0,
+          "title": "Tokens",
+          "type": "integer"
+        },
+        "wall_seconds": {
+          "default": 30,
+          "maximum": 300,
+          "minimum": 1,
+          "title": "Wall Seconds",
+          "type": "integer"
+        },
+        "egress_kb": {
+          "default": 0,
+          "maximum": 1024,
+          "minimum": 0,
+          "title": "Egress Kb",
+          "type": "integer"
+        },
+        "spend": {
+          "default": 0,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Spend",
+          "type": "number"
+        }
+      },
+      "title": "WorkflowBudgets",
+      "type": "object"
+    },
+    "WorkflowNode": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,39}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "tool",
+            "approval",
+            "verify"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "tool": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool"
+        },
+        "args": {
+          "additionalProperties": true,
+          "title": "Args",
+          "type": "object"
+        },
+        "depends_on": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "risk": {
+          "default": "low",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Risk",
+          "type": "string"
+        },
+        "input_taint": {
+          "default": "trusted",
+          "enum": [
+            "trusted",
+            "untrusted",
+            "derived"
+          ],
+          "title": "Input Taint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "WorkflowNode",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "pattern": "^[a-z][a-z0-9_-]{1,63}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "origin": {
+      "default": "user_request",
+      "enum": [
+        "user_request",
+        "skill",
+        "schedule",
+        "event",
+        "repair"
+      ],
+      "title": "Origin",
+      "type": "string"
+    },
+    "trigger": {
+      "const": "on_demand",
+      "default": "on_demand",
+      "title": "Trigger",
+      "type": "string"
+    },
+    "inputs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/InputSpec"
+      },
+      "title": "Inputs",
+      "type": "object"
+    },
+    "budgets": {
+      "$ref": "#/$defs/WorkflowBudgets"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/WorkflowNode"
+      },
+      "maxItems": 30,
+      "minItems": 1,
+      "title": "Nodes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "nodes"
+  ],
+  "title": "WorkflowSpec",
+  "type": "object"
+}\n

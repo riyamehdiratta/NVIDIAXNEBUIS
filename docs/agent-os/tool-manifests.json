@@ -1,0 +1,62 @@
+{
+  "source.list": {
+    "side_effects": "read",
+    "risk": "low",
+    "inverse": null,
+    "needs_scope": "memory.read",
+    "data_egress": "none",
+    "taint_out": "untrusted",
+    "args": {}
+  },
+  "source.get": {
+    "side_effects": "read",
+    "risk": "low",
+    "inverse": null,
+    "needs_scope": "memory.read",
+    "data_egress": "none",
+    "taint_out": "untrusted",
+    "args": {
+      "source_id": "string"
+    }
+  },
+  "memory.open_loops": {
+    "side_effects": "read",
+    "risk": "low",
+    "inverse": null,
+    "needs_scope": "memory.read",
+    "data_egress": "none",
+    "taint_out": "derived",
+    "args": {}
+  },
+  "skill.scan_local": {
+    "side_effects": "local_write",
+    "risk": "low",
+    "inverse": "remove_derived_loops",
+    "needs_scope": "memory.write",
+    "data_egress": "none",
+    "taint_out": "derived",
+    "args": {
+      "skill_id": "string"
+    }
+  },
+  "draft.follow_up": {
+    "side_effects": "local_write",
+    "risk": "low",
+    "inverse": "delete_local_draft",
+    "needs_scope": "draft.write",
+    "data_egress": "none",
+    "taint_out": "derived",
+    "args": {
+      "source_id": "string"
+    }
+  },
+  "report.daily_reset": {
+    "side_effects": "read",
+    "risk": "low",
+    "inverse": null,
+    "needs_scope": "memory.read",
+    "data_egress": "none",
+    "taint_out": "derived",
+    "args": {}
+  }
+}\n

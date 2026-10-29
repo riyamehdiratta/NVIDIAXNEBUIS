@@ -154,6 +154,44 @@ def initialize():
                 PRAGMA user_version = 5;
                 """
             )
+            version = 5
+        if version < 6:
+            db.executescript(
+                """
+                CREATE TABLE workflow_runs (
+                    id TEXT PRIMARY KEY, workflow_id TEXT NOT NULL, workflow_version INTEGER NOT NULL,
+                    status TEXT NOT NULL, inputs TEXT NOT NULL, outputs TEXT NOT NULL DEFAULT '{}',
+                    error TEXT, idempotency_key TEXT UNIQUE, created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE workflow_node_runs (
+                    run_id TEXT NOT NULL REFERENCES workflow_runs(id) ON DELETE CASCADE,
+                    node_id TEXT NOT NULL, status TEXT NOT NULL, output TEXT,
+                    error TEXT, started_at TEXT, completed_at TEXT,
+                    PRIMARY KEY(run_id,node_id)
+                );
+                CREATE INDEX idx_workflow_runs_updated ON workflow_runs(updated_at DESC);
+                PRAGMA user_version = 6;
+                """
+            )
+            version = 6
+        if version < 7:
+            db.executescript(
+                """
+                CREATE TABLE workflow_run_sources (
+                    run_id TEXT NOT NULL REFERENCES workflow_runs(id) ON DELETE CASCADE,
+                    source_id TEXT NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
+                    PRIMARY KEY(run_id,source_id)
+                );
+                CREATE TRIGGER delete_workflow_runs_with_source
+                BEFORE DELETE ON sources
+                BEGIN
+                    DELETE FROM workflow_runs
+                    WHERE id IN (SELECT run_id FROM workflow_run_sources WHERE source_id=OLD.id);
+                END;
+                PRAGMA user_version = 7;
+                """
+            )
     ensure_defaults()
 
 

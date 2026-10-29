@@ -1,6 +1,6 @@
 # Threadline Software Requirements Specification
 
-**Version:** 1.3 | **Status:** Local autonomy, scam triage, precommitments, synthetic demo guard, seven-day replay, local extraction evaluation, source-view runtime fix, and OpenShell-managed live Token Factory inference verified; public hosting pending | **Updated:** 2026-10-29
+**Version:** 1.4 | **Status:** Local autonomy, scam triage, precommitments, synthetic demo guard, seven-day replay, local extraction evaluation, OpenShell-managed live Token Factory inference, and deterministic workflow runtime implemented; public hosting pending | **Updated:** 2026-10-29
 
 ## 1. Purpose and scope
 
@@ -21,7 +21,7 @@ Threadline keeps commitments from user-selected notes, email files, and calendar
 | FR-09 | Enforce a global pause, per-action daily caps, and action reversibility. | Pause/cap prevent automatic execution; only local reminders and drafts may auto-run; calendar exports cannot be promoted above L1. |
 | FR-10 | Support a ten-minute undo ledger and demotion. | Undo deletes a local reminder or deactivates a local draft, records an inverse receipt, and lowers that action type by one level. |
 | FR-11 | Preview model egress and keep an exact receipt. | Remote scans require a single-use, ten-minute preview bound to selected source digests, skill text, model, and request body. |
-| FR-12 | Keep data local by default; export and delete. | JSON export includes source memory, policies, autonomy setting, actions/undo receipts, reminders, activity, scam-check receipts, non-secret family profile metadata, precommitments, and egress ledger; no model call occurs without explicit confirmation. |
+| FR-12 | Keep data local by default; export and delete. | JSON export includes source memory, policies, autonomy setting, actions/undo receipts, reminders, activity, scam-check receipts, non-secret family profile metadata, precommitments, workflow runs/checkpoints, and egress ledger; no model call occurs without explicit confirmation. |
 | FR-13 | Run a local import watcher and daily review. | Worker records local activity; it never sends content to a model. |
 | FR-14 | Triage suspicious message text locally. | Explainable pressure signals and safety steps are returned; only a digest, length, and signal labels are stored, with zero model egress. |
 | FR-15 | Verify a trusted contact with a private phrase. | Phrase is PBKDF2 salted-hashed and never returned by profile APIs; verified and failed checks are logged locally. It is static in this iteration, so it must be shared through a trusted channel and is not a rotating challenge. |
@@ -34,6 +34,12 @@ Threadline keeps commitments from user-selected notes, email files, and calendar
 | FR-22 | Enforce runtime network allowlists outside the model. | OpenShell accepts the Threadline sandbox policy, permits the listed endpoint in a synthetic verification sandbox, and blocks an unlisted endpoint with a policy-denial log. |
 | FR-23 | Start the app container under the Threadline sandbox filesystem policy. | The container working directory is writable Threadline data, app code remains in `/app`, and Uvicorn starts with `/app` as its explicit import root. |
 | FR-24 | Call Nebius through an OpenShell-managed credential. | The real API key remains in provider storage, the app sees only a placeholder, Threadline preview-confirm-scan succeeds on synthetic sources, and the egress receipt records the model and minimized body. |
+| WF-01 | Represent workflows as typed, versioned DAG data. | Schema rejects unknown fields/node types, duplicate IDs, invalid references, missing dependencies, and cycles. |
+| WF-02 | Restrict workflow execution to registered tools and enforce declared permissions. | Unknown tools fail validation and cannot be dispatched; all current registered tools have local-only egress. |
+| WF-03 | Simulate workflow effects before execution and require approval for local writes. | Simulation makes no tool calls; a write workflow without `approved=true` is rejected. |
+| ENG-01 | Persist workflow and node checkpoints for recovery. | Completed nodes are stored in SQLite and resume skips their checkpoints; run IDs and optional idempotency keys are stable. |
+| SEC-01 | Reject model egress and arbitrary code in the initial executor. | Nonzero token, spend, or egress budgets fail static validation; no `model`, `code`, or `web` node can pass schema validation. |
+| MEM-01 | Propagate source deletion to workflow-derived memory. | Deleting a source deletes workflow receipts and checkpoint outputs linked to that source. |
 
 Iteration evidence is maintained in [`docs/iterations/`](iterations/), with OpenShell runtime logs and health-check results in [`docs/evidence/`](evidence/).
 
@@ -49,7 +55,7 @@ Shadow mode uses an interpretable majority-choice baseline, not an LLM claim abo
 
 ## 4. Data model and interfaces
 
-SQLite schema version 5 stores `sources`, `loops`, `skills`, `policies`, `actions`, `reminders`, `egress_events`, `scan_previews`, `daily_reviews`, `app_settings`, `scam_checks`, `family_profiles`, and `contracts`. Policies contain autonomy level, life area, shadow aggregates, and daily cap. Action rows store execution mode, policy level, shadow comparison, undo deadline, inverse receipt, applicable contract, and manual override reason.
+SQLite schema version 7 stores `sources`, `loops`, `skills`, `policies`, `actions`, `reminders`, `egress_events`, `scan_previews`, `daily_reviews`, `app_settings`, `scam_checks`, `family_profiles`, `contracts`, `workflow_runs`, `workflow_node_runs`, and `workflow_run_sources`. Policies contain autonomy level, life area, shadow aggregates, and daily cap. Action rows store execution mode, policy level, shadow comparison, undo deadline, inverse receipt, applicable contract, and manual override reason.
 
 Main interfaces include `GET/PUT /api/policies/{action_type}`, `GET/PUT /api/autonomy`, `POST /api/actions/{id}/undo`, action proposal/decision routes, source/skill/loop routes, and the exact-preview scan routes.
 Quiet-hours precommitments use `GET/POST/DELETE /api/contracts`; supported rule text is intentionally narrow, and time windows use the application host's local clock. The aggregate egress panel uses `GET /api/egress/summary`; the non-persistent simulation uses `POST /api/demo/simulated-week`.
@@ -80,7 +86,10 @@ Quiet-hours precommitments use `GET/POST/DELETE /api/contracts`; supported rule 
 | 11 | Sources-view render crash | Fixed missing icon import; frontend build passed | [Iteration 11](iterations/iteration-11.md) |
 | 12 | OpenShell installation and policy proof | Local gateway and sandbox allow/deny verified; Threadline image starts under policy | [Iteration 12](iterations/iteration-12.md) |
 | 13 | OpenShell-managed Nebius inference | Synthetic preview-confirm-scan succeeded through endpoint-bound provider; exact egress receipt captured | [Iteration 13](iterations/iteration-13.md) |
+| 14 | Deterministic workflow runtime foundation | Typed spec, manifest registry, static validator, simulation, explicit local-write approval, source-linked deletion, and durable per-node checkpoints implemented and API-verified | [Iteration 14](iterations/iteration-14.md) |
 
 ## 7. Known limits and next work
 
 No OAuth connectors, Gmail/Calendar write integration, Nebius Serverless schedule, Hermes process integration, or NemoClaw orchestration is implemented. Iteration 07 delivers only quiet-hours precommitments, not the broader Ulysses vision or a general constitution compiler. Bi-temporal belief revision is also pending. The Scam Antibody slice only includes local message triage and static trusted-contact phrases; it has no rotating challenge protocol, browser sandbox, or personalized susceptibility profile. OpenShell 0.1.6 and a managed Token Factory provider were verified locally using WSL2 + Docker Desktop, which remains an experimental host combination; this is not a production or public cloud deployment. The repository's public visibility and hosted demo URL remain unverified.
+
+The workflow executor is a local deterministic foundation, not a model-generated general agent. Model planning, formal taint propagation across arbitrary node outputs, async durable scheduling, independent verification, bounded repair, compensating transactions, and skill promotion tests/shadow-runs are not yet implemented. See [workflow runtime boundaries](agent-os/workflow-runtime.md).

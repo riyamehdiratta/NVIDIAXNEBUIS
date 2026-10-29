@@ -12,6 +12,7 @@ from .api import router
 from .config import DEMO_MODE, IMPORT_DIR, WEB_DIR
 from .db import connect, initialize, now_iso
 from .worker import background_worker
+from .workflows import router as workflows_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 stop_event = None
@@ -41,6 +42,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Threadline Personal AI", version="0.1.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(router)
+app.include_router(workflows_router)
 
 
 @app.get("/api/status")

@@ -26,6 +26,7 @@ The project addresses interruptions and information overload documented in Micro
 - Use local heuristics without a model key. With a Nebius Token Factory key, preview a minimized/redacted request and explicitly confirm before calling Nemotron 3.5 Lightning or Nemotron 3 Super. Remote approvals are bound to a single-use, ten-minute preview; changed sources or skill instructions invalidate it. In an OpenShell deployment, a managed provider keeps the real key outside the sandbox and the policy allows only the Token Factory host/path.
 - Inspect a log containing the exact request body, selected model, source IDs, redaction counts, status, and response summary. Completed draft/calendar tool results can be copied or downloaded from action history.
 - Export memory and configuration to JSON.
+- Run the installed Commitment scan, Daily reset, and Follow-up draft as versioned workflow DAGs. Inspect a dry run, validate tools and dependencies, approve local writes, and resume from SQLite node checkpoints; only registered local tools can execute.
 
 ## Quick start: local development
 
@@ -96,6 +97,8 @@ Backend modules are split by concern in `backend/app/`; the interface is split i
 
 See [the feature guide](docs/features.md), [SRS](docs/SRS.md), [architecture and runtime notes](docs/architecture.md), [research](docs/research.md), [iteration records](docs/iterations/), and the [OpenShell/NemoClaw runbook](infra/nemoclaw/README.md). The shadow predictor is a majority-choice baseline, not an LLM accuracy claim. OpenShell 0.1.6 is installed with a local WSL gateway and has been verified with a managed Nebius Token Factory provider, a confirmed synthetic Nemotron scan, and a blocked unlisted destination. WSL2 + Docker Desktop remains an experimental OpenShell host combination.
 
+The initial checkpointed workflow API and its boundaries are described in [the workflow runtime guide](docs/agent-os/workflow-runtime.md).
+
 ## API overview
 
 - `POST /api/sources` and `POST /api/sources/text` - add a selected file or pasted text.
@@ -107,6 +110,7 @@ See [the feature guide](docs/features.md), [SRS](docs/SRS.md), [architecture and
 - `GET /api/actions`, `POST /api/actions`, `POST /api/actions/{id}/decision` - propose and review local actions.
 - `GET/POST/DELETE /api/contracts` - compile, inspect, and remove supported quiet-hours precommitments.
 - `GET /api/egress`, `GET /api/export` - inspect model request receipts or export workspace data.
+- `/api/workflows/templates`, `/tools`, `/validate`, `/simulate`, and `/runs` - inspect workflow skills/tools, validate and dry-run workflow plans, then execute approved local templates with durable run receipts.
 
 ## NVIDIA and Nebius use
 

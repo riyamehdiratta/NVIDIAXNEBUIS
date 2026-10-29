@@ -757,6 +757,14 @@ def export_data():
             if action["status"] == "pending":
                 action["shadow_prediction"] = None
         autonomy = db.execute("SELECT value,updated_at FROM app_settings WHERE key='autonomy_enabled'").fetchone()
+        workflow_runs = []
+        for run in db.execute("SELECT * FROM workflow_runs ORDER BY created_at").fetchall():
+            item = dict(run)
+            item["inputs"] = json_value(item["inputs"], {})
+            item["outputs"] = json_value(item["outputs"], {})
+            item["nodes"] = [{**dict(node), "output": json_value(node["output"], None)} for node in db.execute("SELECT * FROM workflow_node_runs WHERE run_id=? ORDER BY rowid", (item["id"],)).fetchall()]
+            item["source_ids"] = [row["source_id"] for row in db.execute("SELECT source_id FROM workflow_run_sources WHERE run_id=?", (item["id"],)).fetchall()]
+            workflow_runs.append(item)
         return {
             "sources": [dict(r) for r in db.execute("SELECT id,filename,kind,title,content,digest,created_at,origin FROM sources").fetchall()],
             "loops": [{**dict(r), "evidence": json_value(r["evidence"], [])} for r in db.execute("SELECT * FROM loops").fetchall()],
@@ -768,6 +776,7 @@ def export_data():
             "scam_checks": [{**dict(r), "signals": json_value(r["signals"], [])} for r in db.execute("SELECT * FROM scam_checks ORDER BY created_at").fetchall()],
             "family_profiles": [dict(r) for r in db.execute("SELECT id,display_name,relationship,created_at FROM family_profiles ORDER BY created_at").fetchall()],
             "contracts": [{**dict(r), "red_team": json_value(r["red_team"], {})} for r in db.execute("SELECT * FROM contracts ORDER BY created_at").fetchall()],
+            "workflow_runs": workflow_runs,
             "activity": [dict(r) for r in db.execute("SELECT * FROM activity ORDER BY created_at").fetchall()],
             "autonomy_control": {"enabled": bool(int(autonomy["value"])) if autonomy else True,
                                  "updated_at": autonomy["updated_at"] if autonomy else None},
