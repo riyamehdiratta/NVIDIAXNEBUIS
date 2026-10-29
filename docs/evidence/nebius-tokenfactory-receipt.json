@@ -1,0 +1,31 @@
+{
+  "id": "1c4742bb-3e2e-4069-b610-7ce5ee377628",
+  "model": "nvidia/Nemotron-3_5-Lightning",
+  "source_ids": [
+    "1303b0d1-37cb-42e5-8c31-a5146c6cfb3d",
+    "1744da8d-0c3c-408e-b290-b557c7ec413a",
+    "a901eff3-307a-4a40-ad1b-42b67a833f46"
+  ],
+  "redacted_fields": 2,
+  "payload": {
+    "model": "nvidia/Nemotron-3_5-Lightning",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are Threadline, a careful personal assistant. Extract structured facts only; do not infer missing deadlines or claim an action was completed."
+      },
+      {
+        "role": "user",
+        "content": "{\"task\": \"Extract only open commitments from the provided user-selected items. Return JSON with an items array. Each item needs title, detail, kind (task, promise, waiting_on_them, appointment), due_at (ISO date or null), owner (string or null), confidence (0..1), and evidence [{source_id, quote}]. Never invent facts, people, or dates. If uncertain, lower confidence and use null.\", \"skill_instructions\": \"Extract actionable commitments and their evidence. Keep dates exact when explicit. Use null when uncertain and explain uncertainty. Do not invent owners or deadlines.\", \"sources\": [{\"id\": \"1303b0d1-37cb-42e5-8c31-a5146c6cfb3d\", \"kind\": \"note\", \"title\": \"Personal notes\", \"content\": \"Call the dentist tomorrow to reschedule. I promised Jordan I would share the launch notes by Friday. Waiting for Casey to send the venue options.\"}, {\"id\": \"1744da8d-0c3c-408e-b290-b557c7ec413a\", \"kind\": \"email\", \"title\": \"Re: Travel details\", \"content\": \"Subject: Re: Travel details\\nFrom: Alex Morgan\\n\\nCould you confirm the pickup time by Thursday? If you need me, reply to [EMAIL_1] or call [PHONE_1].\"}, {\"id\": \"a901eff3-307a-4a40-ad1b-42b67a833f46\", \"kind\": \"email\", \"title\": \"Quote for the studio project\", \"content\": \"Subject: Updated quote\\nFrom: Sam Chen\\n\\nHi, could you send the revised quote to me by Friday? Please include the installation line item. Thanks!\"}]}"
+      }
+    ],
+    "temperature": 0.1,
+    "max_tokens": 3000,
+    "chat_template_kwargs": {
+      "enable_thinking": false
+    }
+  },
+  "status": "sent",
+  "created_at": "2026-10-29T14:15:18+00:00",
+  "response_summary": "Returned 5 candidate item(s)"
+}

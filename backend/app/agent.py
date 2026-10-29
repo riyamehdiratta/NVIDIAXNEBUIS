@@ -106,6 +106,9 @@ def model_request(prompt: dict, model: str):
         ],
         "temperature": 0.1,
         "max_tokens": 3000,
+        # The Nebius-hosted Nemotron Lightning endpoint otherwise spends the
+        # completion budget on chain-of-thought text and may never return JSON.
+        "chat_template_kwargs": {"enable_thinking": False},
     }
 
 

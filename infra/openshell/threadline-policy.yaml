@@ -17,15 +17,16 @@ landlock:
   compatibility: hard_requirement
 
 network_policies:
-  # In a sandbox, point Threadline at the OpenShell/NemoClaw-managed
-  # inference.local route. Do not allow arbitrary Internet access.
-  model_inference:
+  # Direct OpenAI-compatible Token Factory access is restricted to this host,
+  # API path, and Python runtime. The provider substitutes the real key.
+  token_factory:
     endpoints:
-      - host: inference.local
+      - host: api.tokenfactory.nebius.com
         port: 443
+        path: /v1/**
         protocol: rest
         enforcement: enforce
-        access: full
+        access: read-write
     binaries:
       - path: /usr/local/bin/python
       - path: /usr/local/bin/python3.12

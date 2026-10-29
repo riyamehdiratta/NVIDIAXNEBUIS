@@ -1,6 +1,6 @@
 # Threadline Software Requirements Specification
 
-**Version:** 1.2 | **Status:** Local autonomy, scam triage, precommitments, synthetic demo guard, seven-day replay, local extraction evaluation, source-view runtime fix, and OpenShell sandbox allow/deny verification implemented; live Token Factory inference and public hosting pending | **Updated:** 2026-10-29
+**Version:** 1.3 | **Status:** Local autonomy, scam triage, precommitments, synthetic demo guard, seven-day replay, local extraction evaluation, source-view runtime fix, and OpenShell-managed live Token Factory inference verified; public hosting pending | **Updated:** 2026-10-29
 
 ## 1. Purpose and scope
 
@@ -33,6 +33,7 @@ Threadline keeps commitments from user-selected notes, email files, and calendar
 | FR-21 | Render the source import guide without runtime errors. | The Sources view resolves all file-format icons and renders with both empty and populated source lists. |
 | FR-22 | Enforce runtime network allowlists outside the model. | OpenShell accepts the Threadline sandbox policy, permits the listed endpoint in a synthetic verification sandbox, and blocks an unlisted endpoint with a policy-denial log. |
 | FR-23 | Start the app container under the Threadline sandbox filesystem policy. | The container working directory is writable Threadline data, app code remains in `/app`, and Uvicorn starts with `/app` as its explicit import root. |
+| FR-24 | Call Nebius through an OpenShell-managed credential. | The real API key remains in provider storage, the app sees only a placeholder, Threadline preview-confirm-scan succeeds on synthetic sources, and the egress receipt records the model and minimized body. |
 
 Iteration evidence is maintained in [`docs/iterations/`](iterations/), with OpenShell runtime logs and health-check results in [`docs/evidence/`](evidence/).
 
@@ -76,7 +77,10 @@ Quiet-hours precommitments use `GET/POST/DELETE /api/contracts`; supported rule 
 | 08 | UI encoding cleanup and user-facing feature inventory | Implemented; production frontend build passed | [Iteration 08](iterations/iteration-08.md) |
 | 09 | Live Token Factory/OpenShell proof and demo safety | Model IDs verified; demo ingestion gate implemented. Live inference awaits key; OpenShell install is in progress and policy proof is pending; repository is not publicly viewable yet | [Iteration 09](iterations/iteration-09.md) |
 | 10 | Simulated-week evidence and extraction evaluation | Local simulation, privacy totals, and 60-source heuristic evaluation implemented; Nemotron metrics await key | [Iteration 10](iterations/iteration-10.md) |
+| 11 | Sources-view render crash | Fixed missing icon import; frontend build passed | [Iteration 11](iterations/iteration-11.md) |
+| 12 | OpenShell installation and policy proof | Local gateway and sandbox allow/deny verified; Threadline image starts under policy | [Iteration 12](iterations/iteration-12.md) |
+| 13 | OpenShell-managed Nebius inference | Synthetic preview-confirm-scan succeeded through endpoint-bound provider; exact egress receipt captured | [Iteration 13](iterations/iteration-13.md) |
 
 ## 7. Known limits and next work
 
-No OAuth connectors, Gmail/Calendar write integration, Nebius Serverless schedule, Hermes process integration, or active NemoClaw/OpenShell sandbox is implemented yet. Iteration 07 delivers only quiet-hours precommitments, not the broader Ulysses vision or a general constitution compiler. Bi-temporal belief revision is also pending. The Scam Antibody slice only includes local message triage and static trusted-contact phrases; it has no rotating challenge protocol, browser sandbox, or personalized susceptibility profile. These remain future iterations and must not be described as working features. The current workspace has no Nebius key, Docker runtime, or public Git remote, so live Token Factory behavior, cloud deployment, and external policy-denial tests remain unverified.
+No OAuth connectors, Gmail/Calendar write integration, Nebius Serverless schedule, Hermes process integration, or NemoClaw orchestration is implemented. Iteration 07 delivers only quiet-hours precommitments, not the broader Ulysses vision or a general constitution compiler. Bi-temporal belief revision is also pending. The Scam Antibody slice only includes local message triage and static trusted-contact phrases; it has no rotating challenge protocol, browser sandbox, or personalized susceptibility profile. OpenShell 0.1.6 and a managed Token Factory provider were verified locally using WSL2 + Docker Desktop, which remains an experimental host combination; this is not a production or public cloud deployment. The repository's public visibility and hosted demo URL remain unverified.

@@ -23,7 +23,7 @@ The project addresses interruptions and information overload documented in Micro
 - Pause autonomous execution instantly. Opted-in reminders and unsent drafts have a ten-minute undo window; undo demotes that action type. Per-tool daily caps are enforced by the API.
 - Write a quiet-hours precommitment in supported plain language. Boundary tests run before saving; the API blocks matching auto-actions and requires a reason before a manual override.
 - Calendar exports stay approval-only because Threadline cannot recall a downloaded file. The policy gate applies to local app tools and is not an OS sandbox.
-- Use local heuristics without a model key. With a Nebius Token Factory key, preview a minimized/redacted request and explicitly confirm before calling Nemotron 3.5 Lightning or Nemotron 3 Super. Remote approvals are bound to a single-use, ten-minute preview; changed sources or skill instructions invalidate it.
+- Use local heuristics without a model key. With a Nebius Token Factory key, preview a minimized/redacted request and explicitly confirm before calling Nemotron 3.5 Lightning or Nemotron 3 Super. Remote approvals are bound to a single-use, ten-minute preview; changed sources or skill instructions invalidate it. In an OpenShell deployment, a managed provider keeps the real key outside the sandbox and the policy allows only the Token Factory host/path.
 - Inspect a log containing the exact request body, selected model, source IDs, redaction counts, status, and response summary. Completed draft/calendar tool results can be copied or downloaded from action history.
 - Export memory and configuration to JSON.
 
@@ -94,7 +94,7 @@ FastAPI ---- SQLite + local import watcher
 
 Backend modules are split by concern in `backend/app/`; the interface is split into workspace views and components in `frontend/src/`. Database schema changes are versioned through SQLite `user_version` migrations.
 
-See [the feature guide](docs/features.md), [SRS](docs/SRS.md), [architecture and runtime notes](docs/architecture.md), [research](docs/research.md), [iteration records](docs/iterations/), and the optional [OpenShell/NemoClaw runbook](infra/nemoclaw/README.md). The shadow predictor is a majority-choice baseline, not an LLM accuracy claim. OpenShell 0.1.6 is installed with a local WSL gateway and its allow/deny enforcement has been exercised with synthetic traffic; this does not yet verify a Threadline Token Factory inference route. WSL2 + Docker Desktop remains an experimental OpenShell host combination.
+See [the feature guide](docs/features.md), [SRS](docs/SRS.md), [architecture and runtime notes](docs/architecture.md), [research](docs/research.md), [iteration records](docs/iterations/), and the [OpenShell/NemoClaw runbook](infra/nemoclaw/README.md). The shadow predictor is a majority-choice baseline, not an LLM accuracy claim. OpenShell 0.1.6 is installed with a local WSL gateway and has been verified with a managed Nebius Token Factory provider, a confirmed synthetic Nemotron scan, and a blocked unlisted destination. WSL2 + Docker Desktop remains an experimental OpenShell host combination.
 
 ## API overview
 
@@ -112,11 +112,11 @@ See [the feature guide](docs/features.md), [SRS](docs/SRS.md), [architecture and
 
 Nemotron is a runtime model, not just a design reference: once `NEBIUS_API_KEY` is configured, the user can confirm a live OpenAI-compatible Chat Completions request to Nebius Token Factory. Lightning handles everyday extraction; Super handles cases flagged as ambiguous or unusually large. The app deliberately makes no inference call until the user inspects and confirms the minimized request.
 
-Nebius Token Factory avoids requiring the project to provision and serve GPU model weights itself. The optional [OpenShell/NemoClaw runbook](infra/nemoclaw/README.md) documents the intended sandbox boundary and Hermes-compatible runtime path. Public cloud deployment and a live sandbox are not claimed until configured and verified.
+Nebius Token Factory avoids requiring the project to provision and serve GPU model weights itself. A real three-source synthetic Threadline scan has run through an OpenShell-managed Nebius provider; the [receipt and latency](docs/evidence/nebius-tokenfactory-live.txt) and [exact minimized request body](docs/evidence/nebius-tokenfactory-receipt.json) are saved. The [OpenShell/NemoClaw runbook](infra/nemoclaw/README.md) documents the verified endpoint-bound provider path. Public cloud deployment and a public demo URL remain unconfigured.
 
 ## Feedback for the submission
 
-The app has been implemented against the Token Factory OpenAI-compatible API, but the workspace has not yet been supplied a Nebius key, so latency, tool/model output quality, quotas, and cost remain unmeasured. Before submission, add first-hand feedback from using Token Factory and any NVIDIA runtime actually exercised; do not submit this placeholder as measured feedback.
+Feedback from one live run: Token Factory accepted the Nebius endpoint-bound OpenAI-compatible request; the synthetic Threadline preview-confirm-scan completed end-to-end in 3.26 seconds and produced five candidate commitments. A minimal structured-output smoke request took 0.77 seconds. This confirms connectivity and basic output handling, not general extraction quality; broader quality, quota, and cost measurements remain open.
 
 ## Submission materials
 

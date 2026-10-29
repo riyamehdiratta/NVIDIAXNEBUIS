@@ -1,0 +1,34 @@
+Nebius Token Factory + OpenShell live verification - 2026-10-29
+
+Runtime
+- OpenShell 0.1.6 gateway, local mTLS, Docker driver 0.1.6
+- Docker Desktop engine 28.5.1; WSL2 bridge-mode supervisor connection
+- Custom endpoint-bound provider `nebius-tokenfactory`; real credential stored in the OpenShell gateway provider store, not passed to the sandbox as a value
+- Provider endpoint/path: api.tokenfactory.nebius.com:443 /v1/**
+
+Token Factory model catalog
+- nvidia/Nemotron-3_5-Lightning
+- nvidia/nemotron-3-super-120b-a12b
+
+Provider smoke request
+- HTTP 200; model nvidia/Nemotron-3_5-Lightning
+- 765.8 ms; returned `{"items":[]}` with finish_reason=stop, 6 completion tokens
+
+Threadline preview-confirm-scan
+- Three synthetic email/note sources; one calendar source remained local
+- Exact model: nvidia/Nemotron-3_5-Lightning
+- API key configured in the app via OpenShell's placeholder: true
+- Preview redactions: 1 email, 1 phone
+- Egress receipt ID: 1c4742bb-3e2e-4069-b610-7ce5ee377628
+- Egress status: sent; payload length: 1,861 characters; redaction replacements: 2
+- End-to-end scan latency: 3,260 ms; 5 candidate items added
+- Receipt payload SHA-256: 57fc2dd2a7ac6c9b4531154641cc092b757c53b4800aedaba31b351774fd0c6a
+- Full receipt and exact minimized payload: nebius-tokenfactory-receipt.json
+
+OpenShell log excerpts
+NET:OPEN [INFO] ALLOWED /usr/local/bin/python3.12(0) -> api.tokenfactory.nebius.com:443 [policy:_provider_nebius_tokenfactory engine:opa]
+HTTP:POST [INFO] ALLOWED POST https://api.tokenfactory.nebius.com/v1/chat/completions [policy:_provider_nebius_tokenfactory engine:l7]
+NET:REFUSE [MED] DENIED example.org [reason:policy_dns_ineligible]
+NET:OPEN [MED] DENIED /usr/local/bin/python3.12(0) -> example.org:443 [reason:transparent_tcp_policy_denied]
+
+Only generated sample records were sent. The JSON receipt contains the exact minimized request body, including redaction placeholders, and no authentication header or API key.
