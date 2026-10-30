@@ -253,7 +253,7 @@ function App() {
       <div className="page-wrap">
         {workspace.error && <div className="error-banner">{workspace.error} <button onClick={() => workspace.refresh()}>Retry</button></div>}
         <div className="page-heading"><div><div className="eyebrow">{view === 'today' ? dateLabel(localTime).toUpperCase() : 'THREADLINE WORKSPACE'}</div><h1>{shownTitle}</h1><p>{shownSubtitle}</p></div><div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><LiveAssistantTrigger onClick={() => setShowLiveAssistant(true)} isActive={showLiveAssistant} /><button className="button button-primary add-button" onClick={openImport}><Plus size={16} /> {health?.demo_mode ? 'Synthetic demo mode' : 'Capture something'}</button></div></div>
-        {view === 'today' && <TodayView dashboard={dashboard} loops={openLoops} sources={sources} health={health} loading={workspace.loading} onPreview={runPreview} onImport={openImport} onDemo={loadDemo} busy={busy} onDone={finishLoop} onReminder={x => propose(x, 'create_reminder')} onDraft={x => propose(x, 'draft_reply')} onCalendar={x => propose(x, 'calendar_export')} onNavigate={setView} />}
+        {view === 'today' && <TodayView dashboard={dashboard} loops={openLoops} reminders={reminders} sources={sources} health={health} loading={workspace.loading} onPreview={runPreview} onImport={openImport} onDemo={loadDemo} busy={busy} onDone={finishLoop} onReminder={x => propose(x, 'create_reminder')} onDraft={x => propose(x, 'draft_reply')} onCalendar={x => propose(x, 'calendar_export')} onNavigate={setView} />}
         {view === 'delegate' && <SovereignHub setToast={setToast} />}
         {view === 'loops' && <LoopsView loops={visibleLoops} filter={filter} setFilter={setFilter} query={query} setQuery={setQuery} onDone={finishLoop} onReminder={x => propose(x, 'create_reminder')} onDraft={x => propose(x, 'draft_reply')} onCalendar={x => propose(x, 'calendar_export')} />}
         {view === 'skills' && <SkillsView skills={skills} refresh={workspace.refresh} setToast={setToast} onRun={skill => runPreview(skill.id, sources.map(s => s.id))} hasSources={sources.length > 0} />}
@@ -266,14 +266,22 @@ function App() {
         <footer className="page-footer"><span>THREADLINE <b>·</b> YOUR MEMORY, WITH RECEIPTS</span><span>Local workspace <i>•</i> {sources.length} source{sources.length === 1 ? '' : 's'} remembered</span></footer>
       </div>
     </main>
-    {showImport && !health?.demo_mode && <ImportDialog onClose={() => setShowImport(false)} onText={addText} onFiles={addFiles} />}
+    {showImport && !health?.demo_mode && (
+      <ImportDialog
+        onClose={() => setShowImport(false)}
+        onText={addText}
+        onFiles={addFiles}
+        onRefresh={() => workspace.refresh(true)}
+        setToast={setToast}
+      />
+    )}
     {preview && <ScanDialog preview={preview} busy={busy} onClose={() => setPreview(null)} onLocal={() => runScan(false)} onRemote={() => runScan(true)} />}
-    <LiveAssistant isOpen={showLiveAssistant} onClose={() => setShowLiveAssistant(false)} setToast={setToast} />
+    <LiveAssistant isOpen={showLiveAssistant} onClose={() => setShowLiveAssistant(false)} setToast={setToast} onRefresh={() => workspace.refresh(true)} onNavigate={setView} />
     {toast && <div className="toast"><span className="toast-mark"><Check size={14} /></span>{toast}<button onClick={() => setToast('')}><X size={14} /></button></div>}
   </div>;
 }
 
-function TodayView({ dashboard, loops, sources, health, loading, onPreview, onImport, onDemo, busy, onDone, onReminder, onDraft, onCalendar, onNavigate }) {
+function TodayView({ dashboard, loops, reminders = [], sources, health, loading, onPreview, onImport, onDemo, busy, onDone, onReminder, onDraft, onCalendar, onNavigate }) {
   const priorities = [...loops].sort((a, b) => {
     if (a.due_at && b.due_at) return a.due_at.localeCompare(b.due_at);
     if (a.due_at) return -1; if (b.due_at) return 1;
@@ -294,6 +302,7 @@ function TodayView({ dashboard, loops, sources, health, loading, onPreview, onIm
         {loops.length > 3 && <button className="panel-bottom-link" onClick={() => onNavigate('loops')}>See all {loops.length} open loops <ArrowRight size={14} /></button>}
       </section>
       <section className="right-stack">
+        <div className="privacy-card"><div className="privacy-card-head"><div className="privacy-icon"><Clock3 size={16} /></div><div><strong>Your reminders</strong><span>{reminders.length} active</span></div><span className="privacy-status">LOCAL</span></div>{reminders.length ? <div className="privacy-lines">{reminders.slice(0, 5).map(r => <span key={r.id}><i className="line-local" /> {r.title} <b>{r.recurrence === 'monthly' ? `Every month on the ${r.recurrence_day}${r.recurrence_day === 1 ? 'st' : r.recurrence_day === 2 ? 'nd' : r.recurrence_day === 3 ? 'rd' : 'th'}` : r.due_at || 'No date'}</b></span>)}</div> : <p>No reminders saved yet. Ask the assistant to create one.</p>}</div>
         <div className="daily-card">
           <div className="daily-top"><div className="daily-icon"><Sparkles size={17} /></div><span className="eyebrow">YOUR DAILY RESET</span><span className="daily-live"><i /> READY</span></div>
           <h2>Make room for what's next.</h2>
@@ -400,12 +409,63 @@ function ScamView({ checks, family, onCheck, onSaveFamily, onVerify, onRemoveFam
   </div><aside className="scam-aside"><div className="policy-explainer"><div className="eyebrow">A SAFER SECOND</div><h3>Take control back from urgency.</h3><div className="trust-steps"><div className="trust-step"><span className="step-no">01</span><div><strong>Pause</strong><p>Pressure to act quickly is a reason to verify through another route.</p></div></div><div className="trust-step"><span className="step-no">02</span><div><strong>Keep secrets private</strong><p>Never share an OTP, PIN, password, or remote-control access with an unsolicited caller.</p></div></div><div className="trust-step"><span className="step-no">03</span><div><strong>Call a known number</strong><p>Use a contact saved before the message arrived; do not rely on its links or caller ID.</p></div></div></div><div className="enforcement-badge"><LockKeyhole size={14} /><span>Local pattern checks can miss scams and can flag legitimate messages.</span></div></div></aside></div>;
 }
 
-function PolicyIcon({ type }) { return type === 'create_reminder' ? <Bell size={16} /> : type === 'calendar_export' ? <FileClock size={16} /> : <MessageSquareText size={16} />; }
+function PolicyIcon({ type }) {
+  return type === 'create_reminder' ? (
+    <Bell size={16} />
+  ) : type === 'calendar_export' ? (
+    <FileClock size={16} />
+  ) : type === 'send_email' ? (
+    <Mail size={16} />
+  ) : type === 'shortcut_action' ? (
+    <Zap size={16} />
+  ) : (
+    <MessageSquareText size={16} />
+  );
+}
 
 function ActionCard({ action, onDecision }) {
   const [show, setShow] = useState(false);
   const p = action.payload || {};
-  return <div className="action-card"><div className="action-card-top"><span className="action-type"><PolicyIcon type={action.action_type} />{action.action_type.replace('_', ' ')}</span><span className="queued-tag">AWAITING APPROVAL</span></div><strong>{action.title}</strong>{action.loop_title && <span className="action-origin">From open loop · {action.loop_title}</span>}<button className="action-preview-toggle" onClick={() => setShow(!show)}>{show ? 'Hide details' : 'Inspect intended effect'}<ChevronDown size={13} /></button>{show && <pre className="action-payload">{JSON.stringify(p, null, 2)}</pre>}<div className="action-card-footer"><span><LockKeyhole size={12} /> Local only · no external send</span><div><button className="button button-soft" onClick={() => onDecision(action, 'reject')}>Decline</button><button className="button button-primary" onClick={() => onDecision(action, 'approve')}><Check size={14} /> Approve</button></div></div></div>;
+  return (
+    <div className="action-card">
+      <div className="action-card-top">
+        <span className="action-type">
+          <PolicyIcon type={action.action_type} />
+          {action.action_type.replace('_', ' ')}
+        </span>
+        <span className="queued-tag">AWAITING USER APPROVAL</span>
+      </div>
+      <strong>{action.title}</strong>
+      {p.to && (
+        <div style={{ fontSize: 11, color: '#97c79e', margin: '3px 0' }}>
+          <strong>Recipient:</strong> {p.to}
+        </div>
+      )}
+      {action.loop_title && <span className="action-origin">From open loop · {action.loop_title}</span>}
+      <button className="action-preview-toggle" onClick={() => setShow(!show)}>
+        {show ? 'Hide details' : 'Inspect intended effect'}
+        <ChevronDown size={13} />
+      </button>
+      {show && (
+        <pre className="action-payload">
+          {p.draft ? p.draft : JSON.stringify(p, null, 2)}
+        </pre>
+      )}
+      <div className="action-card-footer">
+        <span>
+          <LockKeyhole size={12} /> Local safety bounds · User verification required
+        </span>
+        <div>
+          <button className="button button-soft" onClick={() => onDecision(action, 'reject')}>
+            Decline
+          </button>
+          <button className="button button-primary" onClick={() => onDecision(action, 'approve')}>
+            <Check size={14} /> {action.action_type === 'send_email' ? 'Send Email' : action.action_type === 'draft_reply' ? 'Save Draft' : 'Approve'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function SourcesView({ sources, onImport, onRemove, onPreview, onDemo, busy }) {
@@ -414,6 +474,24 @@ function SourcesView({ sources, onImport, onRemove, onPreview, onDemo, busy }) {
 
 function PrivacyView({ health, events, summary, expanded, setExpanded, onExport }) {
   const [showAll, setShowAll] = useState(false);
+  const [gmail, setGmail] = useState(null);
+  const [gmailBusy, setGmailBusy] = useState(false);
+  const [showGmailSetup, setShowGmailSetup] = useState(false);
+  const refreshGmail = async () => {
+    try { setGmail(await api('/gmail/status')); } catch (error) { setGmail({ error: error.message }); }
+  };
+  useEffect(() => {
+    refreshGmail();
+    const id = setInterval(refreshGmail, 10000);
+    return () => clearInterval(id);
+  }, []);
+  const disconnectGmail = async () => {
+    if (!window.confirm('Disconnect Gmail and remove its saved token from this Threadline workspace?')) return;
+    setGmailBusy(true);
+    try { await api('/gmail/disconnect', { method: 'DELETE' }); await refreshGmail(); }
+    catch (error) { setGmail({ ...gmail, error: error.message }); }
+    finally { setGmailBusy(false); }
+  };
   const shown = showAll ? events : events.slice(0, 5);
   const metrics = [
     ['Original files uploaded', summary?.source_files_uploaded ?? 0, 'Source attachments sent'],
@@ -424,6 +502,11 @@ function PrivacyView({ health, events, summary, expanded, setExpanded, onExport 
     ['Prompt characters', summary?.payload_characters ?? 0, 'Across attempted requests'],
   ];
   return <div className="privacy-layout"><div className="privacy-main">
+    <section className="panel privacy-overview"><div className="panel-head"><div><div className="eyebrow">CONNECTED ACCOUNT</div><h2>Gmail</h2></div><span className="local-tag"><Mail size={13} /> {gmail?.connected ? 'Connected' : 'Not connected'}</span></div>
+      <p className="section-intro">Connect your Google account to send email through Gmail. Threadline requests permission to send mail only. Every message remains pending until you review the recipient, subject, and body and approve it.</p>
+      {gmail?.connected ? <div className="egress-boundary"><div className="boundary-icon"><Mail size={16} /></div><div><strong>{gmail.email}</strong><p>Send mail permission is active. OAuth tokens are stored in this device's local SQLite database, which is not encrypted by Threadline.</p></div><button className="button button-soft" disabled={gmailBusy} onClick={disconnectGmail}>Disconnect</button></div> : <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}><button className="button button-primary" disabled={gmailBusy} onClick={() => { if (gmail?.configured) window.location.href = '/api/gmail/connect'; else setShowGmailSetup(true); }}><Mail size={14} /> {gmail?.configured ? 'Connect Google Gmail' : 'Set up Gmail connection'}</button><span style={{ color: '#8b948b', fontSize: 10 }}>{gmail?.configured ? 'Google OAuth is ready.' : 'Google authorization cannot start until OAuth credentials are configured.'}</span></div>}
+      {!gmail?.configured && <details open={showGmailSetup || !gmail?.configured} onToggle={event => setShowGmailSetup(event.currentTarget.open)} style={{ marginTop: 12, color: '#758075', fontSize: 10 }}><summary>Why can’t I connect yet?</summary><ol style={{ lineHeight: 1.8 }}><li>Create an OAuth client in <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer">Google Cloud Console</a>, and enable the Gmail API.</li><li>Add the OAuth consent screen and your account as a test user if the app is in testing.</li><li>Use Web application and add <code>http://localhost:8000/api/gmail/oauth/callback</code> as an authorized redirect URI.</li><li>Put <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> in the project’s local <code>.env</code>, then restart the backend. The Connect button will then open Google sign-in.</li></ol></details>}
+    </section>
     <section className="panel privacy-overview"><div className="panel-head"><div><div className="eyebrow">THE PRIVACY RECEIPT</div><h2>Your device, your memory.</h2></div><span className="local-tag"><LockKeyhole size={13} /> Local-first</span></div><p className="section-intro">Sources and durable memory live in the local SQLite workspace. A remote model request happens only after you inspect and confirm the preview.</p>
       <div className="egress-summary"><div className="eyebrow">RUNNING DATA MOVEMENT TOTALS</div><div className="egress-summary-grid">{metrics.map(([label, value, note]) => <div key={label}><span>{label}</span><strong>{Number(value).toLocaleString()}</strong><small>{note}</small></div>)}</div><p className="egress-summary-note">Original source files are not uploaded as attachments. Confirmed requests send minimized text shown in each receipt. Regex redaction can miss personal information.</p></div>
       <div className="egress-boundary"><div className="boundary-icon"><ArrowUpRightFromSquare size={16} /></div><div><strong>What leaves this device?</strong><p>Only the selected text included in a confirmed request. The receipt shows its exact request body and response status.</p></div></div>

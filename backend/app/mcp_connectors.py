@@ -109,12 +109,100 @@ def execute_universal_tool(tool_name: str, args: dict[str, Any], caller: str = "
             "executed_at": t_now,
         }
 
-    # 2. Built-in workflow tools
-    if tool_name in TOOL_MANIFESTS:
-        if tool_name == "memory.open_loops":
+    # 2. Memory & Built-in workflow tools
+    if tool_name.startswith("memory."):
+        if tool_name in ("memory.open_loops", "memory.list_open_loops"):
+            status = args.get("status", "open")
+            limit = int(args.get("limit", 15))
             with connect() as db:
-                loops = db.execute("SELECT id, title, kind, due_at, confidence FROM loops WHERE status='open' LIMIT 10").fetchall()
-            return {"tool_name": tool_name, "category": "built_in", "success": True, "result": {"loops": [dict(r) for r in loops]}}
+                loops = db.execute("SELECT id, title, kind, due_at, confidence FROM loops WHERE status=? ORDER BY due_at IS NULL, due_at LIMIT ?", (status, limit)).fetchall()
+            return {"tool_name": tool_name, "category": "memory", "success": True, "result": {"loops": [dict(r) for r in loops]}}
+
+        if tool_name == "memory.add_open_loop":
+            title = args.get("title", "").strip()
+            if not title:
+                return {"tool_name": tool_name, "category": "memory", "success": False, "error": "Title is required for adding an open loop"}
+            detail = args.get("detail", f"Created via Hermes Agent Tool: {title}")
+            due_at = args.get("due_at")
+            kind = args.get("kind", "task")
+            loop_id = "loop_hermes_" + uuid4().hex[:8]
+            t_now = now_iso()
+            evidence = json.dumps([{"source": "Hermes Agent Memory", "quote": title}])
+            with connect() as db:
+                db.execute(
+                    """INSERT INTO loops(id, title, detail, kind, status, due_at, confidence, evidence, created_at, updated_at)
+                       VALUES(?, ?, ?, ?, 'open', ?, 0.98, ?, ?, ?)""",
+                    (loop_id, title.capitalize(), detail, kind, due_at, evidence, t_now, t_now)
+                )
+                db.execute(
+                    "INSERT INTO activity(id, event_type, detail, created_at) VALUES(?, 'loop_created', ?, ?)",
+                    (str(uuid4()), f"Added commitment: {title.capitalize()}", t_now)
+                )
+                db.execute(
+                    """INSERT INTO world_model_triples(id, subject, predicate, object, confidence, evidence, created_at, updated_at)
+                       VALUES(?, 'user', 'has_open_commitment', ?, 0.98, ?, ?, ?)""",
+                    ("trip_" + uuid4().hex[:10], title.capitalize(), evidence, t_now, t_now)
+                )
+                db.execute(
+                    """INSERT INTO hermes_memories(id, category, key, value, confidence, evidence, created_at, updated_at)
+                       VALUES(?, 'task', ?, ?, 1.0, ?, ?, ?)""",
+                    ("mem_" + uuid4().hex[:10], f"task:{loop_id}", title.capitalize(), evidence, t_now, t_now)
+                )
+            return {
+                "tool_name": tool_name,
+                "category": "memory",
+                "success": True,
+                "result": {
+                    "loop_id": loop_id,
+                    "title": title.capitalize(),
+                    "due_at": due_at,
+                    "kind": kind,
+                    "status": "open",
+                    "message": f"Successfully added '{title.capitalize()}' to Open Loops."
+                }
+            }
+
+        if tool_name == "memory.store_memory":
+            key = args.get("key", "").strip()
+            val = args.get("value", "").strip()
+            cat = args.get("category", "fact")
+            if not key or not val:
+                return {"tool_name": tool_name, "category": "memory", "success": False, "error": "Both key and value are required"}
+            mem_id = "mem_" + uuid4().hex[:10]
+            t_now = now_iso()
+            with connect() as db:
+                db.execute(
+                    """INSERT INTO hermes_memories(id, category, key, value, confidence, evidence, created_at, updated_at)
+                       VALUES(?, ?, ?, ?, 1.0, ?, ?, ?)""",
+                    (mem_id, cat, key, val, args.get("evidence", "Hermes Agent"), t_now, t_now)
+                )
+                db.execute(
+                    """INSERT INTO world_model_triples(id, subject, predicate, object, confidence, evidence, created_at, updated_at)
+                       VALUES(?, 'user', ?, ?, 1.0, ?, ?, ?)""",
+                    ("trip_" + uuid4().hex[:10], key, val, args.get("evidence", "Hermes Agent"), t_now, t_now)
+                )
+            return {"tool_name": tool_name, "category": "memory", "success": True, "result": {"memory_id": mem_id, "key": key, "value": val, "saved": True}}
+
+        if tool_name == "memory.recall_memories":
+            query = args.get("query", "").lower()
+            with connect() as db:
+                if query:
+                    mems = db.execute("SELECT * FROM hermes_memories WHERE lower(key) LIKE ? OR lower(value) LIKE ? ORDER BY updated_at DESC LIMIT 20", (f"%{query}%", f"%{query}%")).fetchall()
+                    loops = db.execute("SELECT * FROM loops WHERE status='open' AND (lower(title) LIKE ? OR lower(detail) LIKE ?) LIMIT 10", (f"%{query}%", f"%{query}%")).fetchall()
+                else:
+                    mems = db.execute("SELECT * FROM hermes_memories ORDER BY updated_at DESC LIMIT 20").fetchall()
+                    loops = db.execute("SELECT * FROM loops WHERE status='open' ORDER BY due_at IS NULL, due_at LIMIT 10").fetchall()
+            return {
+                "tool_name": tool_name,
+                "category": "memory",
+                "success": True,
+                "result": {
+                    "memories": [dict(r) for r in mems],
+                    "open_loops": [dict(r) for r in loops]
+                }
+            }
+
+    if tool_name in TOOL_MANIFESTS:
 
         if tool_name == "report.daily_reset":
             with connect() as db:

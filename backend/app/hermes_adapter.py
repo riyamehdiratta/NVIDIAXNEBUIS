@@ -1,19 +1,29 @@
-"""Hermes Agent Tool Calling Standard Adapter.
+"""Hermes Agent Tool Calling & Persistent Memory Standard Adapter.
 
 Provides structured XML/JSON function calling serialization and parsing adhering to
 the Hermes Agent specification (<thought>, <tool_call>, <tool_response>), bridging
-NVIDIA Nemotron 3.5 Lightning with Threadline's 25+ MCP connectors and device primitives.
+NVIDIA Nemotron 3.5 Lightning and local intelligence with Threadline's persistent memory,
+Open Loops substrate, and 25+ MCP connectors.
 """
 
 import json
 import re
 from typing import Any
+from uuid import uuid4
 
+from .db import connect, now_iso
 from .mcp_connectors import get_all_available_tools, execute_universal_tool
 from .device_agent import DEVICE_PRIMITIVES, execute_device_goal_engine
 
 
-HERMES_SYSTEM_PROMPT = """You are Threadline Sovereign Delegate, a local autonomous personal AI operating system.
+HERMES_SYSTEM_PROMPT = """You are Threadline Sovereign Delegate, a private local autonomous personal AI operating system adhering to the Hermes Agent specification.
+You possess durable persistent memory across sessions and direct access to the user's Open Loops substrate.
+
+Persistent Memory & Open Loops Capabilities:
+1. When the user specifies any task, commitment, promise, or waiting item, record it into their Open Loops using `memory.add_open_loop`.
+2. When the user provides personal preferences, facts, or instructions (e.g. tools used, favorite settings, names, roles), retain them in long-term memory via `memory.store_memory`.
+3. To recall past commitments, facts, or context, use `memory.recall_memories`.
+
 You have access to the following tools:
 
 <tools>
@@ -22,13 +32,104 @@ You have access to the following tools:
 
 To call a tool, respond using the following XML format:
 <thought>
-Reason about what to do next based on user intent and available tools.
+Reason about what to do next based on user intent, persistent memory, and available tools.
 </thought>
 <tool_call>
 {{"name": "tool_name", "arguments": {{"arg_name": "arg_value"}}}}
 </tool_call>
 
-Always verify postconditions before confirming completion to the user."""
+Always confirm task persistence and verify postconditions before finalizing your response."""
+
+
+def store_hermes_memory(key: str, value: str, category: str = "fact", evidence: str = "") -> dict[str, Any]:
+    """Persist long-term user memory, fact, or preference in SQLite."""
+    mem_id = "mem_" + uuid4().hex[:10]
+    t_now = now_iso()
+    with connect() as db:
+        db.execute(
+            """INSERT INTO hermes_memories(id, category, key, value, confidence, evidence, created_at, updated_at)
+               VALUES(?, ?, ?, ?, 1.0, ?, ?, ?)""",
+            (mem_id, category, key, value, evidence, t_now, t_now)
+        )
+        db.execute(
+            """INSERT INTO world_model_triples(id, subject, predicate, object, confidence, evidence, created_at, updated_at)
+               VALUES(?, 'user', ?, ?, 1.0, ?, ?, ?)""",
+            ("trip_" + uuid4().hex[:10], key, value, evidence, t_now, t_now)
+        )
+    return {"id": mem_id, "key": key, "value": value, "category": category, "stored": True}
+
+
+def recall_hermes_memories(query: str = "") -> list[dict[str, Any]]:
+    """Retrieve persistent memories from Hermes long-term store."""
+    with connect() as db:
+        if query:
+            rows = db.execute(
+                "SELECT * FROM hermes_memories WHERE lower(key) LIKE ? OR lower(value) LIKE ? ORDER BY updated_at DESC LIMIT 25",
+                (f"%{query.lower()}%", f"%{query.lower()}%")
+            ).fetchall()
+        else:
+            rows = db.execute("SELECT * FROM hermes_memories ORDER BY updated_at DESC LIMIT 25").fetchall()
+    return [dict(r) for r in rows]
+
+
+def add_open_loop_from_hermes(title: str, detail: str = "", due_at: str | None = None, kind: str = "task", evidence: str = "") -> dict[str, Any]:
+    """Durable commitment entry into the loops database table."""
+    loop_id = "loop_live_" + uuid4().hex[:8]
+    t_now = now_iso()
+    clean_title = title.strip().capitalize()
+    evidence_json = json.dumps([{"source": "Hermes Agent", "quote": evidence or title}])
+    with connect() as db:
+        db.execute(
+            """INSERT INTO loops(id, title, detail, kind, status, due_at, confidence, evidence, created_at, updated_at)
+               VALUES(?, ?, ?, ?, 'open', ?, 0.98, ?, ?, ?)""",
+            (loop_id, clean_title, detail or f"Created via Hermes Agent: {title}", kind, due_at, evidence_json, t_now, t_now)
+        )
+        db.execute(
+            "INSERT INTO activity(id, event_type, detail, created_at) VALUES(?, 'loop_created', ?, ?)",
+            (str(uuid4()), f"Added commitment: {clean_title}", t_now)
+        )
+        db.execute(
+            """INSERT INTO world_model_triples(id, subject, predicate, object, confidence, evidence, created_at, updated_at)
+               VALUES(?, 'user', 'committed_to', ?, 0.98, ?, ?, ?)""",
+            ("trip_" + uuid4().hex[:10], clean_title, evidence_json, t_now, t_now)
+        )
+        db.execute(
+            """INSERT INTO hermes_memories(id, category, key, value, confidence, evidence, created_at, updated_at)
+               VALUES(?, 'task', ?, ?, 1.0, ?, ?, ?)""",
+            ("mem_" + uuid4().hex[:10], f"task:{loop_id}", clean_title, evidence_json, t_now, t_now)
+        )
+    return {
+        "loop_id": loop_id,
+        "title": clean_title,
+        "due_at": due_at,
+        "kind": kind,
+        "status": "open",
+        "message": f"I've added '{clean_title}' to your open loops{f' due {due_at}' if due_at else ''}."
+    }
+
+
+def get_hermes_memory_context() -> str:
+    """Format active open loops and persistent memories into context for Hermes agent."""
+    with connect() as db:
+        loops = db.execute("SELECT id, title, kind, due_at FROM loops WHERE status='open' ORDER BY due_at IS NULL, due_at LIMIT 10").fetchall()
+        memories = db.execute("SELECT category, key, value FROM hermes_memories ORDER BY updated_at DESC LIMIT 15").fetchall()
+
+    lines = ["### Active Open Loops:"]
+    if loops:
+        for l in loops:
+            due_str = f" (Due: {l['due_at']})" if l['due_at'] else ""
+            lines.append(f"- [{l['kind'].upper()}] {l['title']}{due_str}")
+    else:
+        lines.append("- (No active open loops)")
+
+    lines.append("\n### Persistent User Memories & Facts:")
+    if memories:
+        for m in memories:
+            lines.append(f"- [{m['category']}] {m['key']}: {m['value']}")
+    else:
+        lines.append("- (No user memories stored yet)")
+
+    return "\n".join(lines)
 
 
 def build_hermes_tools_manifest() -> str:

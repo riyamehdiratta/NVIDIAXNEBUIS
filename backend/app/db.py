@@ -473,6 +473,66 @@ def initialize():
                 """
             )
             version = 14
+        if version < 15:
+            db.executescript(
+                """
+                -- Hermes Agent Persistent Chat History & Long-Term Memory
+                CREATE TABLE IF NOT EXISTS hermes_chat_history (
+                    id TEXT PRIMARY KEY,
+                    role TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    model TEXT,
+                    action_executed TEXT,
+                    created_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS hermes_memories (
+                    id TEXT PRIMARY KEY,
+                    category TEXT NOT NULL DEFAULT 'fact',
+                    key TEXT NOT NULL,
+                    value TEXT NOT NULL,
+                    confidence REAL NOT NULL DEFAULT 1.0,
+                    evidence TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_hermes_mem_key ON hermes_memories(key);
+                CREATE INDEX IF NOT EXISTS idx_hermes_chat_time ON hermes_chat_history(created_at);
+                PRAGMA user_version = 15;
+                """
+            )
+            version = 15
+        if version < 16:
+            db.executescript(
+                """
+                ALTER TABLE reminders ADD COLUMN recurrence TEXT;
+                ALTER TABLE reminders ADD COLUMN recurrence_day INTEGER;
+                ALTER TABLE reminders ADD COLUMN active INTEGER NOT NULL DEFAULT 1;
+                PRAGMA user_version = 16;
+                """
+            )
+            version = 16
+        if version < 17:
+            db.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS gmail_oauth_states (
+                    state TEXT PRIMARY KEY,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS gmail_accounts (
+                    id TEXT PRIMARY KEY,
+                    email TEXT NOT NULL,
+                    access_token TEXT NOT NULL,
+                    refresh_token TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                PRAGMA user_version = 17;
+                """
+            )
+            version = 17
     ensure_defaults()
 
 
@@ -492,8 +552,14 @@ def ensure_defaults():
                 "INSERT OR IGNORE INTO skills(id,name,description,instructions,updated_at) VALUES(?,?,?,?,?)",
                 (id_, name, description, instructions, t),
             )
-        areas = {"create_reminder": "personal", "draft_reply": "work", "calendar_export": "personal"}
-        for action_type in ("create_reminder", "draft_reply", "calendar_export"):
+        areas = {
+            "create_reminder": "personal",
+            "draft_reply": "work",
+            "calendar_export": "personal",
+            "send_email": "work",
+            "shortcut_action": "personal",
+        }
+        for action_type in ("create_reminder", "draft_reply", "calendar_export", "send_email", "shortcut_action"):
             db.execute(
                 "INSERT OR IGNORE INTO policies(action_type,mode,updated_at,life_area) VALUES(?,?,?,?)",
                 (action_type, "ask", t, areas[action_type]),
@@ -527,6 +593,12 @@ def ensure_defaults():
             ("conn_web", "web_search", "Web Knowledge & Search", "app_connector", "Live web search, documentation fetching, and citation retrieval.", "connected", "{}", json.dumps([
                 {"name": "web.search", "description": "Search the public web for real-time facts, APIs, and docs", "args": {"query": "string", "limit": "integer"}},
                 {"name": "web.fetch_url", "description": "Fetch article text and extract citations from a web page", "args": {"url": "string"}}
+            ])),
+            ("conn_hermes_memory", "hermes_memory", "Hermes Persistent Memory", "app_connector", "Persistent episodic and semantic memory store adhering to the Hermes Agent specification.", "connected", "{}", json.dumps([
+                {"name": "memory.add_open_loop", "description": "Add a task, commitment, promise, or waiting item to the user's persistent Open Loops", "args": {"title": "string", "detail": "string", "due_at": "string", "kind": "string"}},
+                {"name": "memory.store_memory", "description": "Persist a user fact, preference, or context in long-term memory", "args": {"key": "string", "value": "string", "category": "string"}},
+                {"name": "memory.recall_memories", "description": "Retrieve stored persistent memories, facts, and open loops", "args": {"query": "string"}},
+                {"name": "memory.list_open_loops", "description": "List all active open loops with due dates and confidence", "args": {"status": "string"}}
             ]))
         ]
 

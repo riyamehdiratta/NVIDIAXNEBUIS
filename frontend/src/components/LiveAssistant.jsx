@@ -14,6 +14,8 @@ import {
   Globe,
   Layers,
   Link2,
+  LockKeyhole,
+  Mail,
   Maximize2,
   MessageSquare,
   Mic,
@@ -36,12 +38,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, post } from '../api';
 import './LiveAssistant.css';
 
-export function LiveAssistant({ isOpen, onClose, setToast }) {
+export function LiveAssistant({ isOpen, onClose, setToast, onRefresh, onNavigate }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Hello! I'm your Sovereign Delegate. I'm connected to your workspace memory and apps. What would you like to capture, review, or do?",
-      model: 'Threadline Sovereign Substrate',
+      content: "Hello! I'm your Sovereign Delegate powered by Hermes Agent. I maintain persistent memory across sessions and connect directly to your Open Loops. What task or commitment would you like to track?",
+      model: 'Hermes Agent & Sovereign Substrate',
     },
   ]);
   const [input, setInput] = useState('');
@@ -51,20 +53,18 @@ export function LiveAssistant({ isOpen, onClose, setToast }) {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [continuousCapture, setContinuousCapture] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [sentActionIds, setSentActionIds] = useState(new Set());
   const [showConnectors, setShowConnectors] = useState(false);
   const [connectors, setConnectors] = useState([]);
   const [allTools, setAllTools] = useState([]);
   const [suggestions, setSuggestions] = useState([
-    "What's due this week?",
-    'Create project workspace with README',
-    'Open WhatsApp and chat with Jordan',
-    'Play turn-based chess with Jordan',
-    'Search GitHub for open issues',
-    'Search Google docs for proposal',
-    'Read file README.md',
-    'Inspect database schema',
-    'Search web for Nemotron 3.5',
-    'Is this message a scam?',
+    "Add my task to my open loop: complete project presentation by tomorrow",
+    "Remember that I am using Hermes agent",
+    "What is in my persistent memory?",
+    "Show my open loops",
+    "Search GitHub for open issues",
+    "Inspect database schema",
+    "Is this message a scam?",
   ]);
 
   const recognitionRef = useRef(null);
@@ -75,6 +75,11 @@ export function LiveAssistant({ isOpen, onClose, setToast }) {
     if (isOpen) {
       api('/connectors/').then(setConnectors).catch(() => []);
       api('/connectors/all_tools').then((d) => setAllTools(d.tools || [])).catch(() => []);
+      api('/live/history').then((hist) => {
+        if (hist && hist.length > 0) {
+          setMessages(hist);
+        }
+      }).catch(() => {});
     }
   }, [isOpen]);
 
@@ -215,6 +220,15 @@ export function LiveAssistant({ isOpen, onClose, setToast }) {
         setSuggestions(res.suggestions);
       }
 
+      if (res.action_executed?.type === 'loop_created') {
+        onRefresh?.();
+        setToast?.(`Added "${res.action_executed.title}" to Open Loops`);
+      } else if (res.action_executed?.type === 'memory_stored') {
+        setToast?.(`Saved to Hermes persistent memory: ${res.action_executed.key}`);
+      } else if (res.action_executed) {
+        onRefresh?.();
+      }
+
       // Voice response
       if (res.voice_summary) {
         speakText(res.voice_summary);
@@ -284,12 +298,13 @@ export function LiveAssistant({ isOpen, onClose, setToast }) {
             <button
               className="live-icon-btn"
               title="Clear conversation"
-              onClick={() => {
+              onClick={async () => {
+                await api('/live/history', { method: 'DELETE' }).catch(() => {});
                 setMessages([
                   {
                     role: 'assistant',
-                    content: "Conversation reset. I'm ready for your next request.",
-                    model: 'Threadline Sovereign Substrate',
+                    content: "Conversation history cleared. I'm connected to your Hermes persistent memory and Open Loops. What would you like to track?",
+                    model: 'Hermes Agent & Sovereign Substrate',
                   },
                 ]);
               }}
@@ -404,6 +419,9 @@ export function LiveAssistant({ isOpen, onClose, setToast }) {
                   <div className="live-action-badge-card">
                     <div className="live-action-badge-left" style={{ width: '100%' }}>
                       {msg.action_executed.type === 'loop_created' && <Calendar size={14} color="#94d88e" />}
+                      {msg.action_executed.type === 'memory_stored' && <Database size={14} color="#7ccff0" />}
+                      {msg.action_executed.type === 'memory_recalled' && <Layers size={14} color="#a088ff" />}
+                      {msg.action_executed.type === 'loops_listed' && <Calendar size={14} color="#94d88e" />}
                       {msg.action_executed.type === 'draft_created' && <Zap size={14} color="#e0c068" />}
                       {msg.action_executed.type === 'scam_triaged' && <AlertCircle size={14} color="#e27c6f" />}
                       {msg.action_executed.type === 'tool_executed' && <Terminal size={14} color="#76d68b" />}
@@ -412,7 +430,17 @@ export function LiveAssistant({ isOpen, onClose, setToast }) {
                       {msg.action_executed.type === 'device_agent_executed' && <Folder size={14} color="#72dec2" />}
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <strong>{msg.action_executed.title || msg.action_executed.tool_name || msg.action_executed.type.replace('_', ' ').toUpperCase()}</strong>
+                          <strong>{msg.action_executed.title || msg.action_executed.key || msg.action_executed.tool_name || msg.action_executed.type.replace('_', ' ').toUpperCase()}</strong>
+                          {msg.action_executed.type === 'loop_created' && (
+                            <span style={{ fontSize: 7, font: '600 7px var(--mono)', background: '#1c3d25', color: '#8de882', padding: '1px 5px', borderRadius: 3 }}>
+                              OPEN LOOP ADDED {msg.action_executed.due_at ? `· DUE ${msg.action_executed.due_at}` : ''}
+                            </span>
+                          )}
+                          {msg.action_executed.type === 'memory_stored' && (
+                            <span style={{ fontSize: 7, font: '600 7px var(--mono)', background: '#163342', color: '#7ce4ff', padding: '1px 5px', borderRadius: 3 }}>
+                              HERMES PERSISTENT MEMORY
+                            </span>
+                          )}
                           {msg.action_executed.connector && (
                             <span style={{ fontSize: 7, font: '600 7px var(--mono)', background: '#25422d', color: '#aee494', padding: '1px 5px', borderRadius: 3 }}>
                               {msg.action_executed.connector}
@@ -442,9 +470,68 @@ export function LiveAssistant({ isOpen, onClose, setToast }) {
                             </pre>
                           </details>
                         )}
+
+                        {/* Interactive Email Verification Card */}
+                        {msg.action_executed.type === 'draft_created' && (
+                          <div style={{ marginTop: 8, padding: '8px 10px', background: '#121a14', borderRadius: 6, border: '1px solid #243527' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, font: '600 8px var(--mono)', color: '#a2caa6' }}>
+                              <span>TO: {msg.action_executed.to || 'Recipient'}</span>
+                              <span>{msg.action_executed.subject || 'Follow-up'}</span>
+                            </div>
+                            <pre style={{ margin: '4px 0 8px', padding: 6, background: '#0a0f0b', borderRadius: 4, font: '9px var(--mono)', color: '#c7e6cb', whiteSpace: 'pre-wrap', maxHeight: 120, overflowY: 'auto' }}>
+                              {msg.action_executed.draft}
+                            </pre>
+                            {sentActionIds.has(msg.action_executed.action_id) ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9be57d', font: '600 9px var(--mono)' }}>
+                                <Check size={13} />
+                                <span>{msg.action_executed.gmail_connected ? 'EMAIL SENT THROUGH GMAIL' : 'DRAFT SAVED LOCALLY · NOT SENT'}</span>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                {msg.action_executed.gmail_connected ? <button
+                                  className="button button-primary"
+                                  style={{ fontSize: 9, padding: '4px 12px', background: '#295f36', borderColor: '#488c59' }}
+                                  onClick={async () => {
+                                    try {
+                                      await post(`/actions/${msg.action_executed.action_id}/decision`, { decision: 'approve' });
+                                      setSentActionIds((prev) => new Set([...prev, msg.action_executed.action_id]));
+                                      setToast?.(`Email sent to ${msg.action_executed.to}. It will appear in Gmail's Sent folder.`);
+                                      onRefresh?.();
+                                    } catch (err) {
+                                      setToast?.(`Error: ${err.message}`);
+                                    }
+                                  }}
+                                ><Send size={11} /><span>Review & Send</span></button> : msg.action_executed.gmail_configured ? <a
+                                  className="button button-primary"
+                                  style={{ fontSize: 9, padding: '4px 12px', background: '#295f36', borderColor: '#488c59', textDecoration: 'none' }}
+                                  href="/api/gmail/connect"
+                                ><Mail size={11} /><span>Sign in to Gmail</span></a> : <button
+                                  className="button button-soft"
+                                  style={{ fontSize: 9, padding: '4px 10px' }}
+                                  onClick={() => { onNavigate?.('privacy'); onClose?.(); }}
+                                ><LockKeyhole size={11} /><span>Set up Gmail sign-in</span></button>}
+                                <button
+                                  className="button button-soft"
+                                  style={{ fontSize: 9, padding: '4px 8px' }}
+                                  onClick={() => {
+                                    post(`/actions/${msg.action_executed.action_id}/decision`, { decision: 'reject' }).catch(() => {});
+                                    setSentActionIds((prev) => new Set([...prev, msg.action_executed.action_id]));
+                                    setToast?.('Email draft discarded');
+                                    onRefresh?.();
+                                  }}
+                                >
+                                  Discard
+                                </button>
+                              </div>
+                            )}
+                            {!sentActionIds.has(msg.action_executed.action_id) && !msg.action_executed.gmail_connected && <small style={{ display: 'block', marginTop: 6, color: '#9ba89c', fontSize: 9 }}>
+                              {msg.action_executed.gmail_configured ? 'After Google sign-in, return to Pending Approvals and approve this saved email to send it.' : 'This email is saved for approval and has not been sent. Gmail sign-in needs OAuth setup in Privacy & Activity first.'}
+                            </small>}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    {msg.action_executed.draft && (
+                    {msg.action_executed.draft && msg.action_executed.type !== 'draft_created' && (
                       <button
                         className="button button-soft"
                         style={{ fontSize: 8, padding: '3px 8px', alignSelf: 'flex-start' }}

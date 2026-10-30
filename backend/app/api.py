@@ -24,8 +24,14 @@ from .schemas import ActionRequest, AutonomyControlRequest, DecisionRequest, Fam
 
 
 router = APIRouter(prefix="/api")
-SUPPORTED_ACTIONS = {"create_reminder", "draft_reply", "calendar_export"}
-ACTION_LABELS = {"create_reminder": "Create reminder", "draft_reply": "Draft reply", "calendar_export": "Calendar event"}
+SUPPORTED_ACTIONS = {"create_reminder", "draft_reply", "calendar_export", "send_email", "shortcut_action"}
+ACTION_LABELS = {
+    "create_reminder": "Create reminder",
+    "draft_reply": "Draft reply",
+    "calendar_export": "Calendar event",
+    "send_email": "Send email",
+    "shortcut_action": "Action shortcut",
+}
 
 
 def _log(kind, detail):
@@ -232,7 +238,7 @@ def policies():
         item.update(shadow_summary(item["shadow_agreements"], item["shadow_samples"]))
         item["mode"] = "auto_local" if item["autonomy_level"] >= 2 else "ask"
         item["label"] = ACTION_LABELS.get(item["action_type"], item["action_type"])
-        item["reversible"] = item["action_type"] in {"create_reminder", "draft_reply"}
+        item["reversible"] = item["action_type"] in {"create_reminder", "draft_reply", "shortcut_action"}
         result.append(item)
     return result
 
@@ -250,8 +256,8 @@ def update_policy(action_type: str, body: PolicyRequest):
         changes["autonomy_level"] = 2 if changes.pop("mode") == "auto_local" else 1
     if "autonomy_level" in changes:
         level = changes["autonomy_level"]
-        if level >= 2 and action_type not in {"create_reminder", "draft_reply"}:
-            raise HTTPException(422, "Calendar exports are not reversible and cannot run autonomously")
+        if level >= 2 and action_type not in {"create_reminder", "draft_reply", "shortcut_action"}:
+            raise HTTPException(422, "External email and calendar actions require your approval")
         changes["mode"] = "auto_local" if level >= 2 else "ask"
     if "life_area" in changes and changes["life_area"] not in {"work", "money", "family", "health", "personal"}:
         raise HTTPException(422, "life_area must be work, money, family, health, or personal")
@@ -580,8 +586,39 @@ def _execute_local_action(db, action, execution_mode="manual", autonomy_level=1)
         db.execute("INSERT INTO reminders(id,action_id,title,due_at,created_at) VALUES(?,?,?,?,?)",
                    (reminder_id, action["id"], action["title"], payload.get("due_at"), now_iso()))
         result = {"message": "Reminder saved locally", "reminder_id": reminder_id, "due_at": payload.get("due_at")}
+    elif action["action_type"] == "send_email":
+        from .gmail import send_gmail_message
+        result = send_gmail_message(payload.get("to", ""), payload.get("subject", action["title"]), payload.get("draft", ""))
+        db.execute(
+            "INSERT INTO activity(id,event_type,detail,created_at) VALUES(?,?,?,?)",
+            (str(uuid4()), "email_sent", f"Sent email to {result['to']} regarding {result['subject']}", now_iso()),
+        )
     elif action["action_type"] == "draft_reply":
-        result = {"message": "Draft saved in your local workspace. It was not sent.", "draft": payload.get("draft", "")}
+        to_addr = payload.get("to") or "recipient"
+        subj = payload.get("subject") or action["title"]
+        draft_body = payload.get("draft", "")
+        result = {
+            "message": f"Draft saved locally for {to_addr}. No email was sent.",
+            "to": to_addr,
+            "subject": subj,
+            "sent": False,
+            "draft": draft_body,
+        }
+        db.execute(
+            "INSERT INTO activity(id,event_type,detail,created_at) VALUES(?,?,?,?)",
+            (str(uuid4()), "email_draft_saved", f"Saved an email draft for {to_addr} regarding {subj}; not sent", now_iso()),
+        )
+    elif action["action_type"] == "shortcut_action":
+        wf_id = payload.get("workflow_id")
+        result = {
+            "message": f"Action shortcut '{action['title']}' executed successfully.",
+            "workflow_id": wf_id,
+            "executed_at": now_iso(),
+        }
+        db.execute(
+            "INSERT INTO activity(id,event_type,detail,created_at) VALUES(?,?,?,?)",
+            (str(uuid4()), "shortcut_executed", f"Executed action shortcut: {action['title']}", now_iso()),
+        )
     elif action["action_type"] == "calendar_export":
         due = payload.get("due_at") or date.today().isoformat()
         try:
@@ -592,7 +629,7 @@ def _execute_local_action(db, action, execution_mode="manual", autonomy_level=1)
         ics = "\r\n".join(["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Threadline//Personal AI//EN", "BEGIN:VEVENT", f"UID:{action['id']}@threadline.local", f"DTSTART:{stamp}", f"SUMMARY:{action['title']}", f"DESCRIPTION:{str(payload.get('description', ''))[:500].replace(chr(10), ' ')}", "END:VEVENT", "END:VCALENDAR", ""])
         result = {"message": "Calendar event exported locally", "filename": "threadline-reminder.ics", "content": ics}
     completed_at = datetime.now(timezone.utc)
-    undo_deadline = (completed_at + timedelta(minutes=10)).isoformat(timespec="seconds") if action["action_type"] in {"create_reminder", "draft_reply"} else None
+    undo_deadline = (completed_at + timedelta(minutes=10)).isoformat(timespec="seconds") if action["action_type"] in {"create_reminder", "draft_reply", "shortcut_action"} else None
     db.execute("UPDATE actions SET status='completed',decided_at=?,result=?,undo_deadline=?,execution_mode=?,policy_level=? WHERE id=?",
                (completed_at.isoformat(timespec="seconds"), json.dumps(result, ensure_ascii=False), undo_deadline, execution_mode, autonomy_level, action["id"]))
     return result
@@ -626,7 +663,7 @@ def propose_action(body: ActionRequest):
         autonomy_enabled = bool(int(control["value"])) if control else True
         day_start = datetime.now(timezone.utc).date().isoformat()
         auto_count = db.execute("SELECT COUNT(*) FROM actions WHERE execution_mode='autonomous' AND status IN ('completed','undone') AND created_at>=? AND action_type=?", (day_start, body.action_type)).fetchone()[0]
-        reversible = body.action_type in {"create_reminder", "draft_reply"}
+        reversible = body.action_type in {"create_reminder", "draft_reply", "shortcut_action"}
         contract = _quiet_contract(db, body.action_type)
         can_auto = (not contract and can_execute_automatically(autonomy_enabled, bool(policy["shadow_mode"]), reversible,
                                                                policy["autonomy_level"], auto_count, policy["max_actions_per_day"]))
@@ -713,7 +750,7 @@ def undo_action(action_id: str):
 @router.get("/reminders")
 def reminders():
     with connect() as db:
-        return [dict(r) for r in db.execute("SELECT * FROM reminders ORDER BY CASE WHEN due_at IS NULL THEN 1 ELSE 0 END,due_at DESC").fetchall()]
+        return [dict(r) for r in db.execute("SELECT * FROM reminders WHERE active=1 ORDER BY CASE WHEN due_at IS NULL THEN 1 ELSE 0 END,due_at").fetchall()]
 
 
 @router.post("/demo/load")

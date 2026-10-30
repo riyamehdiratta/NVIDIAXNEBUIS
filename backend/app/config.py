@@ -17,3 +17,7 @@ NANO_MODEL = os.getenv("THREADLINE_NANO_MODEL", "nvidia/Nemotron-3_5-Lightning")
 SUPER_MODEL = os.getenv("THREADLINE_SUPER_MODEL", "nvidia/nemotron-3-super-120b-a12b")
 DEMO_MODE = os.getenv("THREADLINE_DEMO_MODE", "0").lower() in {"1", "true", "yes"}
 WATCH_IMPORTS = os.getenv("THREADLINE_WATCH_IMPORTS", "1").lower() in {"1", "true", "yes"}
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/gmail/oauth/callback")
+GOOGLE_FRONTEND_URL = os.getenv("GOOGLE_FRONTEND_URL", "http://localhost:5173")

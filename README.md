@@ -2,26 +2,26 @@
 
 **A private personal AI and autonomous OS substrate that keeps life's open loops moving.**
 
-Threadline turns the commitments buried in user-selected emails, calendar files, notes, and native desktop interactions into a persistent, source-linked view of what is due, what is waiting, and what the user promised. Beyond routine task extraction, Threadline features **The Sovereign Delegate**—a research-grade autonomous agent architecture that learns how you work by watching native desktop applications, synthesizes its own capabilities, and acts with mathematically provable risk bounds.
+Threadline turns commitments in user-selected emails, calendar files, and notes into a persistent, source-linked view of what is due, what is waiting, and what the user promised. Its optional Chrome extension can record browser page clicks and completed text fields as local action traces and replay them after confirmation. It does not record or control native desktop apps.
 
 ---
 
 ## The Sovereign Delegate: 5 Research-Grade Pillars
 
-Unlike cloud-confined voice assistants (such as Alexa or Siri) that are tethered to proprietary vendor ecosystems, the Sovereign Delegate operates directly on your host machine across any native desktop application with statistical error guarantees and zero vendor lock-in.
+Threadline's local workflow tools are limited to their registered capabilities. Browser action replay requires the optional Chrome extension and permission to read and change websites.
 
 ```text
-       Universal OS Perception (Win32 ctypes / Any Desktop App)
+       Chrome Browser Action Trace (optional extension)
                                   │
                   Demonstration Trace Recording
                                   │
        ┌──────────────────────────┴──────────────────────────┐
        ▼                                                     ▼
 PILLAR 1: Ambient Apprenticeship              PILLAR 2: Learned Preference Model
- • Cross-app interaction logging               • Feature vector extraction x ∈ ℝ⁸
- • Automated PII & credential masking          • Online Bayesian logistic regression
- • Parameter lifting ($inputs.<param>)         • Epistemic entropy H(p) quantification
- • Kahn-checked DAG workflow compiler          • Strategic active learning queries
+ • Browser page click and text-field logging   • Feature vector extraction x ∈ ℝ⁸
+ • Skips password and secret fields            • Online Bayesian logistic regression
+ • Local action trace storage                  • Epistemic entropy H(p) quantification
+ • Confirmed Chrome-page replay                • Strategic active learning queries
        │                                                     │
        └──────────────────────────┬──────────────────────────┘
                                   ▼
@@ -40,11 +40,10 @@ PILLAR 4: Self-Extension Studio               PILLAR 5: Causal World Model
  • Dynamic injection into TOOL_MANIFESTS       • 7-day forward horizon workload rehearsal
 ```
 
-### 1. Ambient Apprenticeship (Universal OS Perception)
-- **Universal Introspection:** Inspects foreground windows, process IDs, and coordinates via native Win32 `ctypes` (`GetForegroundWindow`, `GetWindowTextW`, `GetWindowThreadProcessId`, `GetWindowRect`) with zero third-party dependencies. Not bound to Chrome or any single app—works with Excel, Slack, Terminal, ERPs, and file managers.
-- **Automated PII & Credential Sanitization:** Sensitive input roles and passwords matching security patterns are masked in-flight (`[MASKED_CREDENTIAL]`).
-- **Parameter Lifting:** Concrete values (e.g., dates `2026-11-20`, emails `cfo@company.org`, numeric quantities) are lifted into typed `$inputs.<var>` parameters.
-- **DAG Workflow Compilation:** Compiles multi-step user demonstrations into typed, Kahn-cycle-checked `WorkflowSpec` DAGs with auto-appended verification nodes.
+### 1. Browser action capture and replay
+- Install the unpacked Chrome extension from [`browser-extension`](browser-extension/README.md). It observes page clicks and completed text fields only while recording is active, and stores those steps in Threadline's local database.
+- Run a saved task to repeat its clicks and text entry in Chrome after an explicit confirmation. A changed page or selector can stop replay; review each run because it may submit forms or send messages.
+- Password, file, hidden, and commonly labeled secret fields are skipped. The extension does not control native desktop apps, Safari, or other browsers.
 
 ### 2. Learned Model of You (Preference Model & Active Learning)
 - **Contextual Representation:** Extracts normalized feature vectors $\mathbf{x} \in \mathbb{R}^8$ (risk score, reversibility, work context, late hours, external writes, volume ratio, entity familiarity, base bias).
@@ -158,6 +157,8 @@ Requirements: Python 3.10+, Node.js 20+, and npm. A Nebius Token Factory account
 
 To enable Nebius, copy `.env.example` to `.env`, add `NEBIUS_API_KEY`, stop and restart the API. Never commit `.env`. The app defaults to `https://api.tokenfactory.nebius.com/v1/`, model `nvidia/Nemotron-3_5-Lightning` for routine scans and `nvidia/nemotron-3-super-120b-a12b` when the source set is classified as ambiguous or large. These IDs were checked against the [Nebius NVIDIA Nemotron catalog](https://nebius.com/services/token-factory/models/nvidia-nemotron-models-inference); availability can change. The exact model IDs and API path are configurable via environment variables.
 
+To connect Gmail, enable the Gmail API in a Google Cloud project, configure its OAuth consent screen, and create an OAuth client with application type **Web application**. Add `http://localhost:8000/api/gmail/oauth/callback` as an authorized redirect URI, copy the client ID and secret into `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`, then restart the API. Open **Privacy & Activity → Connect Google Gmail** and authorize the account. Each requested email is shown for approval before Gmail sends it. A consent screen in testing may require your account to be listed as a test user.
+
 ## Docker
 
 ```powershell
@@ -173,12 +174,12 @@ For a disposable synthetic-data build, use `docker compose -f docker-compose.dem
 ## Data and privacy
 
 - SQLite data and imported source text stay in the configured local data directory. This MVP does **not** encrypt that database itself; use device-level disk encryption and do not import sensitive data into a public demo.
-- No Google, email, or calendar account is connected. Imports are explicit and user-selected.
+- Imports are explicit and user-selected. Gmail sending is optional and uses the account connected through Google OAuth. Threadline requests Gmail send permission only; each message remains in the approval queue until you approve it. Disconnecting revokes and removes the saved token. OAuth tokens are stored in SQLite, which this MVP does not encrypt.
 - The remote scan preview shows the complete request JSON Threadline sends, excluding the authentication header. Email addresses, phone numbers, SSNs, and long digit sequences are replaced with placeholders. Redaction is pattern-based and cannot guarantee that every personal detail is removed.
 - Scam Check makes no model call and does not retain the pasted message; its local history stores a digest, length, score, and signal labels. Family phrases are static in this MVP and hashed in the unencrypted SQLite database. Choose a unique phrase and continue verifying high-risk requests independently.
 - Threadline sends no source files as attachments. If the user confirms, the selected, minimized text is sent to the chosen Nebius Token Factory model. The request and result status are recorded in the local egress log.
 - If inference fails, local source data remains intact and no external action is performed. Local-only extraction remains available.
-- Local action automation is limited to data in Threadline: reminders, `.ics` exports, and unsent drafts. Email is never sent, and no payment or external change is performed. These app checks do not replace OS-level sandboxing.
+- Local action automation is limited to data in Threadline: reminders, `.ics` exports, and drafts. Gmail messages are external writes and always require explicit approval before send. No payment or call is performed. These app checks do not replace OS-level sandboxing.
 
 ## Architecture
 

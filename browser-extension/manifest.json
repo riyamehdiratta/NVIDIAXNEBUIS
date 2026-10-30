@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Threadline Browser Actions",
+  "version": "0.1.0",
+  "description": "Record and replay browser tasks with Threadline when you start and approve them.",
+  "permissions": ["storage", "tabs", "scripting"],
+  "host_permissions": ["<all_urls>", "http://localhost:8000/*", "http://127.0.0.1:8000/*"],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>",
+        "http://localhost:5173/*",
+        "http://127.0.0.1:5173/*",
+        "http://localhost:8000/*",
+        "http://127.0.0.1:8000/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "background": { "service_worker": "background.js" }
+}

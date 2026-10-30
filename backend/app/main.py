@@ -24,6 +24,7 @@ from .device_agent import router as device_agent_router
 from .backtest import router as backtest_router
 from .dreaming import router as dreaming_router
 from .privacy_proof import router as privacy_proof_router, CHAOS_ROUTER as chaos_router
+from .gmail import router as gmail_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 stop_event = None
@@ -66,6 +67,7 @@ app.include_router(backtest_router)
 app.include_router(dreaming_router)
 app.include_router(privacy_proof_router)
 app.include_router(chaos_router)
+app.include_router(gmail_router)
 
 
 @app.get("/api/status")
