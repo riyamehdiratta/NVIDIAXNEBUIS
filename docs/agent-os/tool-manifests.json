@@ -5,7 +5,10 @@
     "inverse": null,
     "needs_scope": "memory.read",
     "data_egress": "none",
-    "taint_out": "untrusted",
+    "outputs": {
+      "sources": "source_list"
+    },
+    "output_taint": "untrusted",
     "args": {}
   },
   "source.get": {
@@ -14,7 +17,14 @@
     "inverse": null,
     "needs_scope": "memory.read",
     "data_egress": "none",
-    "taint_out": "untrusted",
+    "outputs": {
+      "id": "string",
+      "filename": "string",
+      "kind": "string",
+      "title": "string",
+      "preview": "string"
+    },
+    "output_taint": "untrusted",
     "args": {
       "source_id": "string"
     }
@@ -25,7 +35,10 @@
     "inverse": null,
     "needs_scope": "memory.read",
     "data_egress": "none",
-    "taint_out": "derived",
+    "outputs": {
+      "loops": "loop_list"
+    },
+    "output_taint": "derived",
     "args": {}
   },
   "skill.scan_local": {
@@ -34,7 +47,13 @@
     "inverse": "remove_derived_loops",
     "needs_scope": "memory.write",
     "data_egress": "none",
-    "taint_out": "derived",
+    "outputs": {
+      "added": "integer",
+      "duplicates": "integer",
+      "mode": "string",
+      "source_ids": "string_list"
+    },
+    "output_taint": "derived",
     "args": {
       "skill_id": "string"
     }
@@ -45,9 +64,51 @@
     "inverse": "delete_local_draft",
     "needs_scope": "draft.write",
     "data_egress": "none",
-    "taint_out": "derived",
+    "outputs": {
+      "source_id": "string",
+      "draft": "string",
+      "sent": "boolean"
+    },
+    "output_taint": "untrusted",
     "args": {
-      "source_id": "string"
+      "source_id": "string",
+      "source_preview": "string"
+    }
+  },
+  "action.propose_reminder": {
+    "side_effects": "local_write",
+    "risk": "low",
+    "inverse": "undo_action",
+    "needs_scope": "actions.propose",
+    "policy_action_type": "create_reminder",
+    "data_egress": "none",
+    "outputs": {
+      "id": "string",
+      "status": "string",
+      "execution_mode": "string"
+    },
+    "output_taint": "derived",
+    "args": {
+      "title": "string",
+      "payload": "object"
+    }
+  },
+  "action.propose_draft": {
+    "side_effects": "local_write",
+    "risk": "low",
+    "inverse": "undo_action",
+    "needs_scope": "actions.propose",
+    "policy_action_type": "draft_reply",
+    "data_egress": "none",
+    "outputs": {
+      "id": "string",
+      "status": "string",
+      "execution_mode": "string"
+    },
+    "output_taint": "derived",
+    "args": {
+      "title": "string",
+      "draft": "string"
     }
   },
   "report.daily_reset": {
@@ -56,7 +117,31 @@
     "inverse": null,
     "needs_scope": "memory.read",
     "data_egress": "none",
-    "taint_out": "derived",
-    "args": {}
+    "outputs": {
+      "open_count": "integer",
+      "priority": "loop_list",
+      "note": "string"
+    },
+    "output_taint": "derived",
+    "args": {
+      "loops": "loop_list"
+    }
+  },
+  "verify.check_output": {
+    "side_effects": "read",
+    "risk": "low",
+    "inverse": null,
+    "needs_scope": "memory.read",
+    "data_egress": "none",
+    "outputs": {
+      "verified": "boolean",
+      "issues": "string_list",
+      "confidence": "string"
+    },
+    "output_taint": "derived",
+    "args": {
+      "request_summary": "string",
+      "actual_output": "object"
+    }
   }
-}\n
+}

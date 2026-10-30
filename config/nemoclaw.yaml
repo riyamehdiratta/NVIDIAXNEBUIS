@@ -1,0 +1,64 @@
+# NVIDIA NemoClaw Agent Configuration for Threadline Sovereign Delegate
+version: "1.0"
+agent_name: "threadline_sovereign_delegate"
+description: "Autonomous local personal AI operating system with Conformal Risk Control and Action Ladder execution."
+
+models:
+  primary_planner:
+    provider: "nebius_serverless"
+    endpoint: "https://api.tokenfactory.nebius.ai/v1"
+    model_name: "nvidia/nemotron-3.5-lightning"
+    temperature: 0.1
+    max_tokens: 4096
+    context_window: 131072
+    purpose: "DAG workflow compilation, multi-step device goal planning, intent routing"
+
+  super_reasoner:
+    provider: "nebius_serverless"
+    endpoint: "https://api.tokenfactory.nebius.ai/v1"
+    model_name: "nvidia/nemotron-3-super"
+    temperature: 0.2
+    max_tokens: 8192
+    purpose: "Complex multi-application arbitration and causal hypothesis formulation"
+
+  fallback_local:
+    provider: "local_sovereign"
+    model_name: "threadline_heuristic_engine"
+    purpose: "Zero-network offline extraction, Win32 perception, and Rung 1 execution"
+
+execution_substrate:
+  action_ladder:
+    rung_1_direct_api:
+      enabled: true
+      sandbox_dir: "./data/workspace"
+      timeout_seconds: 15
+    rung_2_accessibility:
+      enabled: true
+      provider: "win32_ui_automation"
+      target_timeout_seconds: 5
+    rung_3_vision:
+      enabled: true
+      provider: "gdi_viewport_capture"
+      ocr_confidence_threshold: 0.85
+    rung_4_human_gate:
+      enabled: true
+      mandatory_policies:
+        - "external_messaging_egress"
+        - "financial_payment_execution"
+        - "irreversible_data_deletion"
+
+safety_controls:
+  conformal_risk_control:
+    alpha: 0.02
+    min_calibration_samples: 20
+    cusum_martingale_threshold: 3.5
+  taint_quarantine:
+    untrusted_sources:
+      - "inbound_whatsapp_messages"
+      - "unverified_web_html"
+      - "pasted_untrusted_notes"
+    restricted_sinks:
+      - "shell.run_command"
+      - "fs.delete_file"
+      - "external_chat_egress"
+

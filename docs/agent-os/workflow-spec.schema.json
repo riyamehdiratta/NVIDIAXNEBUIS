@@ -1,12 +1,14 @@
 {
   "$defs": {
     "InputSpec": {
+      "additionalProperties": false,
       "properties": {
         "type": {
           "enum": [
             "string",
             "string_list",
-            "integer"
+            "integer",
+            "object"
           ],
           "title": "Type",
           "type": "string"
@@ -22,6 +24,21 @@
           "minimum": 1,
           "title": "Max Length",
           "type": "integer"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 240,
+          "title": "Description",
+          "type": "string"
+        },
+        "taint": {
+          "default": "trusted",
+          "enum": [
+            "trusted",
+            "untrusted"
+          ],
+          "title": "Taint",
+          "type": "string"
         }
       },
       "required": [
@@ -31,6 +48,7 @@
       "type": "object"
     },
     "WorkflowBudgets": {
+      "additionalProperties": false,
       "properties": {
         "tokens": {
           "default": 0,
@@ -73,10 +91,14 @@
           "type": "string"
         },
         "type": {
+          "default": "tool",
           "enum": [
             "tool",
-            "approval",
-            "verify"
+            "map",
+            "branch",
+            "loop",
+            "verify",
+            "approval"
           ],
           "title": "Type",
           "type": "string"
@@ -124,11 +146,115 @@
           ],
           "title": "Input Taint",
           "type": "string"
+        },
+        "over": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Over"
+        },
+        "do_tool": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Do Tool"
+        },
+        "do_args": {
+          "additionalProperties": true,
+          "title": "Do Args",
+          "type": "object"
+        },
+        "max_items": {
+          "default": 20,
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Max Items",
+          "type": "integer"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Condition"
+        },
+        "then_node": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Then Node"
+        },
+        "else_node": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Else Node"
+        },
+        "loop_until": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Loop Until"
+        },
+        "max_iterations": {
+          "default": 3,
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Max Iterations",
+          "type": "integer"
+        },
+        "loop_body": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Loop Body",
+          "type": "array"
+        },
+        "verify_against": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Verify Against",
+          "type": "array"
         }
       },
       "required": [
-        "id",
-        "type"
+        "id"
       ],
       "title": "WorkflowNode",
       "type": "object"
@@ -139,6 +265,19 @@
     "id": {
       "pattern": "^[a-z][a-z0-9_-]{1,63}$",
       "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "default": "Untitled workflow",
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "maxLength": 500,
+      "title": "Description",
       "type": "string"
     },
     "version": {
@@ -159,10 +298,38 @@
       "type": "string"
     },
     "trigger": {
-      "const": "on_demand",
       "default": "on_demand",
+      "enum": [
+        "on_demand",
+        "schedule",
+        "event"
+      ],
       "title": "Trigger",
       "type": "string"
+    },
+    "schedule_cron": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Schedule Cron"
+    },
+    "event_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Event Type"
     },
     "inputs": {
       "additionalProperties": {
@@ -191,4 +358,4 @@
   ],
   "title": "WorkflowSpec",
   "type": "object"
-}\n
+}

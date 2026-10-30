@@ -765,6 +765,9 @@ def export_data():
             item["nodes"] = [{**dict(node), "output": json_value(node["output"], None)} for node in db.execute("SELECT * FROM workflow_node_runs WHERE run_id=? ORDER BY rowid", (item["id"],)).fetchall()]
             item["source_ids"] = [row["source_id"] for row in db.execute("SELECT source_id FROM workflow_run_sources WHERE run_id=?", (item["id"],)).fetchall()]
             workflow_runs.append(item)
+        workflow_definitions = [{**dict(row), "versions": [{**dict(version), "spec": json_value(version["spec"], {})}
+                                   for version in db.execute("SELECT * FROM workflow_versions WHERE workflow_id=? ORDER BY version", (row["id"],)).fetchall()]}
+                                 for row in db.execute("SELECT * FROM workflow_definitions ORDER BY created_at").fetchall()]
         return {
             "sources": [dict(r) for r in db.execute("SELECT id,filename,kind,title,content,digest,created_at,origin FROM sources").fetchall()],
             "loops": [{**dict(r), "evidence": json_value(r["evidence"], [])} for r in db.execute("SELECT * FROM loops").fetchall()],
@@ -777,6 +780,7 @@ def export_data():
             "family_profiles": [dict(r) for r in db.execute("SELECT id,display_name,relationship,created_at FROM family_profiles ORDER BY created_at").fetchall()],
             "contracts": [{**dict(r), "red_team": json_value(r["red_team"], {})} for r in db.execute("SELECT * FROM contracts ORDER BY created_at").fetchall()],
             "workflow_runs": workflow_runs,
+            "workflow_definitions": workflow_definitions,
             "activity": [dict(r) for r in db.execute("SELECT * FROM activity ORDER BY created_at").fetchall()],
             "autonomy_control": {"enabled": bool(int(autonomy["value"])) if autonomy else True,
                                  "updated_at": autonomy["updated_at"] if autonomy else None},

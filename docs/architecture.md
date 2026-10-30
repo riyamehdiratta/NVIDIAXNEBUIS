@@ -10,6 +10,7 @@
 - **Precommitment compiler (`contracts.py` + API gate):** Parses a deliberately narrow quiet-hours statement, runs boundary checks at start/interior/end, and stores the resulting time range. The action API checks it both before automatic execution and at manual approval; an override reason is persisted in the action receipt.
 - **Background worker:** Polls the selected import folder every 20 seconds. At the first 9 a.m. poll each day it writes a daily review summary. It never sends content to a model itself.
 - **Model adapter:** Calls the OpenAI-compatible Nebius Token Factory Chat Completions endpoint after explicit UI confirmation. When no key is configured, the local heuristic parser remains available.
+- **Workflow compiler/runtime:** Nemotron receives a previewed, redacted task request plus the closed local tool catalog and JSON schema. The user confirms egress before compilation; a static validator rejects unknown tools, invalid DAGs, and unsupported budgets. A compiled workflow is saved as a versioned skill or one-off, then simulated and explicitly approved before local writes run.
 
 ## Data flow
 
@@ -19,6 +20,7 @@
 4. The user reviews each loop and any proposed action. Approved local reminders/drafts/calendar exports are written to the local database or returned as downloadable files.
 5. Before automatic execution, the API checks the global switch, per-action level, reversible-tool allowlist, and that tool's UTC-day cap. Shadow mode leaves actions in the review queue, compares a private majority-choice prediction with the later decision, and accumulates statistical evidence. The system never raises the level automatically.
 6. Active precommitments are checked against the host's local clock at proposal and approval time. A matching rule disables automatic execution; manual approval requires a reason of at least 20 characters, which is stored with the action.
+7. For a user-demand workflow, the compiler preview contains no sources or memory; only after confirmation does it send the redacted task and tool schema to Nemotron. When revising a saved workflow, the selected current spec is also included and visible in that preview. The returned workflow is validated and saved. A separate dry-run and user approval gate local changes before the deterministic executor writes any checkpoint or draft.
 
 ## Failure behavior
 

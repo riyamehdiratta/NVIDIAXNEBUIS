@@ -1,11 +1,17 @@
-import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, ArrowUpRightFromSquare, Bell, BookOpenText, Check, CheckCheck, ChevronDown, ChevronRight, CircleHelp, Clock3, Download, FileClock, FilePlus2, FileText, Fingerprint, Inbox, KeyRound, LayoutDashboard, LoaderCircle, LockKeyhole, Mail, Menu, MessageSquareText, MoreHorizontal, Plus, Search, Settings2, ShieldAlert, ShieldCheck, Sparkles, Upload, WandSparkles, X } from 'lucide-react';
+import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, ArrowUpRightFromSquare, Bell, BookOpenText, Check, CheckCheck, ChevronDown, ChevronRight, CircleHelp, Clock3, Cpu, Download, FileClock, FilePlus2, FileText, Fingerprint, GitBranch, Inbox, KeyRound, LayoutDashboard, LoaderCircle, LockKeyhole, Mail, Menu, MessageSquareText, MoreHorizontal, Plus, Search, Settings2, ShieldAlert, ShieldCheck, Sparkles, Upload, WandSparkles, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, post, put } from './api';
 import { ImportDialog } from './components/ImportDialog';
+import { LiveAssistant, LiveAssistantTrigger } from './components/LiveAssistant';
 import { LoopCard } from './components/LoopCard';
+import { SovereignHub } from './components/SovereignHub';
+import { WorkflowLab } from './components/WorkflowLab';
 
 const nav = [
   { id: 'today', label: 'Today', icon: LayoutDashboard },
+  { id: 'live', label: 'Live Assistant', icon: Sparkles, badge: 'LIVE VOICE' },
+  { id: 'delegate', label: 'Sovereign OS (AGI)', icon: Cpu, badge: '5 PILLARS' },
+  { id: 'workflows', label: 'Agent workflows', icon: GitBranch },
   { id: 'loops', label: 'Open loops', icon: Inbox },
   { id: 'skills', label: 'Skills', icon: WandSparkles },
   { id: 'permissions', label: 'Permissions', icon: ShieldCheck },
@@ -52,6 +58,7 @@ function App() {
   const workspace = useWorkspace();
   const { dashboard, loops, sources, skills, policies, actions, egress, egressSummary, reminders, health, autonomy, family, scamChecks, contracts } = workspace;
   const [view, setView] = useState('today');
+  const [showLiveAssistant, setShowLiveAssistant] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [preview, setPreview] = useState(null);
   const [busy, setBusy] = useState('');
@@ -224,15 +231,15 @@ function App() {
     catch (e) { setToast(e.message); }
   };
 
-  const shownTitle = { today: 'Your day, unknotted.', loops: 'Nothing slips the thread.', skills: 'Make the routine reusable.', permissions: 'You set the boundaries.', commitments: 'Your rules, before the moment.', scam: 'Pause. Verify. Then decide.', sources: 'Your information, your call.', privacy: 'See what leaves. See what changes.' }[view];
-  const shownSubtitle = { today: "A clear view of what's next, what's waiting, and what you said you'd do.", loops: 'A living memory of commitments, each tied back to where it came from.', skills: 'Give Threadline a repeatable way to handle the things you do all the time.', permissions: 'Threadline earns a recommendation. You decide when it gets more room to act.', commitments: 'Compile a plain-language boundary into a rule checked by the action API.', scam: 'Check pressure tactics locally and verify a familiar voice with a private phrase.', sources: 'Choose what Threadline can remember by bringing it here.', privacy: 'Your sources stay on this device. Every model request has a receipt.' }[view];
+  const shownTitle = { today: 'Your day, unknotted.', delegate: 'The Sovereign Delegate · AGI Operating System', loops: 'Nothing slips the thread.', skills: 'Make the routine reusable.', workflows: 'Give a task its own workflow.', permissions: 'You set the boundaries.', commitments: 'Your rules, before the moment.', scam: 'Pause. Verify. Then decide.', sources: 'Your information, your call.', privacy: 'See what leaves. See what changes.' }[view];
+  const shownSubtitle = { today: "A clear view of what's next, what's waiting, and what you said you'd do.", delegate: 'Universal OS perception across all native apps, provable conformal risk control (α ≤ 0.02), online Bayesian preference model, autonomous tool synthesis, and 7-day causal horizon rehearsals.', loops: 'A living memory of commitments, each tied back to where it came from.', skills: 'Give Threadline a repeatable way to handle the things you do all the time.', workflows: 'Describe a task. Review the generated plan. Approve each local run.', permissions: 'Threadline earns a recommendation. You decide when it gets more room to act.', commitments: 'Compile a plain-language boundary into a rule checked by the action API.', scam: 'Check pressure tactics locally and verify a familiar voice with a private phrase.', sources: 'Choose what Threadline can remember by bringing it here.', privacy: 'Your sources stay on this device. Every model request has a receipt.' }[view];
 
   return <div className="app-shell">
     <aside className={`sidebar ${mobileMenu ? 'mobile-open' : ''}`}>
       <div className="brand-row"><div className="brand-mark"><span /><span /><span /></div><div className="brand-name">threadline<span>PERSONAL AI</span></div><button className="mobile-close" onClick={() => setMobileMenu(false)}><X size={17} /></button></div>
       <div className="workspace-selector"><div className="avatar">Y</div><div className="workspace-name"><strong>Your workspace</strong><span>Private · this device</span></div><ChevronDown size={15} className="muted-icon" /></div>
       <div className="sidebar-label">WORKSPACE</div>
-      <nav className="nav-list">{nav.map(({ id, label, icon: Icon }) => <button key={id} className={`nav-item ${view === id ? 'active' : ''}`} onClick={() => { setView(id); setMobileMenu(false); }}><Icon size={17} strokeWidth={1.8} /><span>{label}</span>{id === 'permissions' && pendingActions.length > 0 && <b className="nav-count">{pendingActions.length}</b>}</button>)}</nav>
+      <nav className="nav-list">{nav.map(({ id, label, icon: Icon, badge }) => <button key={id} className={`nav-item ${view === id ? 'active' : ''}`} onClick={() => { if (id === 'live') { setShowLiveAssistant(true); } else { setView(id); } setMobileMenu(false); }}><Icon size={17} strokeWidth={1.8} /><span>{label}</span>{badge && <b className="nav-count" style={{ background: id === 'live' ? '#2f603c' : '#2f5b3a', color: id === 'live' ? '#c2f296' : '#bce481', fontSize: '8px' }}>{badge}</b>}{id === 'permissions' && pendingActions.length > 0 && <b className="nav-count">{pendingActions.length}</b>}</button>)}</nav>
       <div className="sidebar-label secondary-label">CONTROL & CONTEXT</div>
       <nav className="nav-list">{auxNav.map(({ id, label, icon: Icon }) => <button key={id} className={`nav-item ${view === id ? 'active' : ''}`} onClick={() => { setView(id); setMobileMenu(false); }}><Icon size={17} strokeWidth={1.8} /><span>{label}</span>{id === 'sources' && sources.length > 0 && <b className="nav-count muted-count">{sources.length}</b>}</button>)}</nav>
       <div className="sidebar-bottom">
@@ -242,13 +249,15 @@ function App() {
     </aside>
     {mobileMenu && <div className="mobile-scrim" onClick={() => setMobileMenu(false)} />}
     <main className="main-area">
-      <header className="topbar"><div className="topbar-left"><button className="mobile-menu-button icon-button" onClick={() => setMobileMenu(true)}><Menu size={19} /></button><div className="breadcrumbs"><span>Workspace</span><ChevronRight size={13} /><strong>{nav.concat(auxNav).find(n => n.id === view)?.label || 'Today'}</strong></div></div><div className="topbar-right"><span className="sync-label"><span className="sync-dot" /> Saved locally</span><button className="icon-button help-button" title="About Threadline" onClick={() => setToast('A personal memory with receipts. Always yours, always reviewable.')}><CircleHelp size={17} /></button><div className="top-avatar">Y</div></div></header>
+      <header className="topbar"><div className="topbar-left"><button className="mobile-menu-button icon-button" onClick={() => setMobileMenu(true)}><Menu size={19} /></button><div className="breadcrumbs"><span>Workspace</span><ChevronRight size={13} /><strong>{nav.concat(auxNav).find(n => n.id === view)?.label || 'Today'}</strong></div></div><div className="topbar-right"><LiveAssistantTrigger onClick={() => setShowLiveAssistant(true)} isActive={showLiveAssistant} /><span className="sync-label"><span className="sync-dot" /> Saved locally</span><button className="icon-button help-button" title="About Threadline" onClick={() => setToast('A personal memory with receipts. Always yours, always reviewable.')}><CircleHelp size={17} /></button><div className="top-avatar">Y</div></div></header>
       <div className="page-wrap">
         {workspace.error && <div className="error-banner">{workspace.error} <button onClick={() => workspace.refresh()}>Retry</button></div>}
-        <div className="page-heading"><div><div className="eyebrow">{view === 'today' ? dateLabel(localTime).toUpperCase() : 'THREADLINE WORKSPACE'}</div><h1>{shownTitle}</h1><p>{shownSubtitle}</p></div><button className="button button-primary add-button" onClick={openImport}><Plus size={16} /> {health?.demo_mode ? 'Synthetic demo mode' : 'Capture something'}</button></div>
+        <div className="page-heading"><div><div className="eyebrow">{view === 'today' ? dateLabel(localTime).toUpperCase() : 'THREADLINE WORKSPACE'}</div><h1>{shownTitle}</h1><p>{shownSubtitle}</p></div><div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}><LiveAssistantTrigger onClick={() => setShowLiveAssistant(true)} isActive={showLiveAssistant} /><button className="button button-primary add-button" onClick={openImport}><Plus size={16} /> {health?.demo_mode ? 'Synthetic demo mode' : 'Capture something'}</button></div></div>
         {view === 'today' && <TodayView dashboard={dashboard} loops={openLoops} sources={sources} health={health} loading={workspace.loading} onPreview={runPreview} onImport={openImport} onDemo={loadDemo} busy={busy} onDone={finishLoop} onReminder={x => propose(x, 'create_reminder')} onDraft={x => propose(x, 'draft_reply')} onCalendar={x => propose(x, 'calendar_export')} onNavigate={setView} />}
+        {view === 'delegate' && <SovereignHub setToast={setToast} />}
         {view === 'loops' && <LoopsView loops={visibleLoops} filter={filter} setFilter={setFilter} query={query} setQuery={setQuery} onDone={finishLoop} onReminder={x => propose(x, 'create_reminder')} onDraft={x => propose(x, 'draft_reply')} onCalendar={x => propose(x, 'calendar_export')} />}
         {view === 'skills' && <SkillsView skills={skills} refresh={workspace.refresh} setToast={setToast} onRun={skill => runPreview(skill.id, sources.map(s => s.id))} hasSources={sources.length > 0} />}
+        {view === 'workflows' && <WorkflowLab apiKeyConfigured={health?.api_key_configured} demoMode={health?.demo_mode} setToast={setToast} />}
         {view === 'permissions' && <PermissionsView policies={policies} actions={actions} autonomy={autonomy} onPolicy={changePolicy} onDecision={decideAction} onUndo={undoAction} onGlobalPause={setGlobalAutonomy} simulation={weekSimulation} simulationBusy={simulationBusy} onSimulateWeek={runWeekSimulation} />}
         {view === 'commitments' && <ContractsView contracts={contracts} onSave={saveContract} onRemove={removeContract} />}
         {view === 'scam' && <ScamView checks={scamChecks} family={family} onCheck={inspectScam} onSaveFamily={saveFamily} onVerify={verifyFamily} onRemoveFamily={removeFamily} onRemoveCheck={removeScamCheck} />}
@@ -259,6 +268,7 @@ function App() {
     </main>
     {showImport && !health?.demo_mode && <ImportDialog onClose={() => setShowImport(false)} onText={addText} onFiles={addFiles} />}
     {preview && <ScanDialog preview={preview} busy={busy} onClose={() => setPreview(null)} onLocal={() => runScan(false)} onRemote={() => runScan(true)} />}
+    <LiveAssistant isOpen={showLiveAssistant} onClose={() => setShowLiveAssistant(false)} setToast={setToast} />
     {toast && <div className="toast"><span className="toast-mark"><Check size={14} /></span>{toast}<button onClick={() => setToast('')}><X size={14} /></button></div>}
   </div>;
 }

@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  openshell-agent:
+    build:
+      context: ..
+      dockerfile: docker/openshell.Dockerfile
+    container_name: threadline-sovereign-agent
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # NVIDIA Nemotron Inference via Nebius Serverless Token Factory
+      - NEBIUS_TOKEN_FACTORY_BASE_URL=${NEBIUS_TOKEN_FACTORY_BASE_URL:-https://api.tokenfactory.nebius.ai/v1}
+      - TOKEN_FACTORY_API_KEY=${TOKEN_FACTORY_API_KEY:-}
+      - NANO_MODEL=${NANO_MODEL:-nvidia/nemotron-3-8b-instruct}
+      - SUPER_MODEL=${SUPER_MODEL:-nvidia/nemotron-3-super}
+      - THREADLINE_CONFORMAL_ALPHA=0.02
+      - THREADLINE_SANDBOX_DIR=/workspace/data/workspace
+    volumes:
+      - ../data:/workspace/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+

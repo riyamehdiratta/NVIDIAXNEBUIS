@@ -1,0 +1,490 @@
+/* Live Assistant (Gemini Live & ChatGPT Style) */
+
+/* Global Live Pill in Topbar / Corner */
+.live-trigger-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #244930 0%, #173320 100%);
+  border: 1px solid #3d6a4a;
+  color: #ebfaea;
+  font: 600 11px var(--display);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(25, 45, 30, 0.2);
+  transition: all 0.2s ease;
+}
+
+.live-trigger-pill:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #2d5b3d 0%, #1f422a 100%);
+  box-shadow: 0 4px 14px rgba(25, 45, 30, 0.28);
+}
+
+.live-trigger-pill.is-active {
+  background: linear-gradient(135deg, #c54233 0%, #9e2e21 100%);
+  border-color: #e56254;
+  color: #ffffff;
+  animation: live-glow 1.5s infinite alternate;
+}
+
+@keyframes live-glow {
+  from { box-shadow: 0 0 8px rgba(197, 66, 51, 0.4); }
+  to { box-shadow: 0 0 18px rgba(197, 66, 51, 0.7); }
+}
+
+.live-trigger-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #a9e080;
+  box-shadow: 0 0 0 2px rgba(169, 224, 128, 0.3);
+}
+
+.live-trigger-pill.is-active .live-trigger-dot {
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+}
+
+/* Modal Overlay for Full Live Experience */
+.live-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 22, 17, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.live-container {
+  width: min(720px, 100%);
+  height: min(760px, calc(100vh - 32px));
+  background: #141b16;
+  border: 1px solid #27382b;
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  color: #edf5ee;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Header */
+.live-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #1f2d22;
+  background: rgba(20, 27, 22, 0.9);
+}
+
+.live-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.live-logo-orb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #aee384, #366d42);
+  display: grid;
+  place-items: center;
+  color: #112817;
+  box-shadow: 0 0 10px rgba(174, 227, 132, 0.4);
+}
+
+.live-header-brand h3 {
+  margin: 0;
+  font: 700 13px var(--display);
+  letter-spacing: -0.3px;
+  color: #ffffff;
+}
+
+.live-header-brand span {
+  font: 500 8px var(--mono);
+  color: #7b9480;
+  display: block;
+}
+
+.live-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #2a3a2d;
+  background: #1b261e;
+  color: #a4b5a6;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.live-icon-btn:hover {
+  background: #253328;
+  color: #ffffff;
+}
+
+.live-icon-btn.active {
+  background: #2a5535;
+  color: #b7e38e;
+  border-color: #3b744a;
+}
+
+/* Reactive Audio Visualizer Orb (Gemini Live Style) */
+.live-visualizer-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px 16px;
+  background: radial-gradient(ellipse at center, rgba(38, 77, 49, 0.25) 0%, rgba(20, 27, 22, 0) 70%);
+  position: relative;
+  min-height: 190px;
+}
+
+.live-orb-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.live-orb-aura {
+  position: absolute;
+  inset: -15px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(138, 224, 114, 0.22) 0%, rgba(53, 115, 68, 0) 70%);
+  animation: orb-breathe 4s infinite ease-in-out;
+}
+
+.live-orb-core {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #9ee27b 0%, #3e7b4c 50%, #1e4529 100%);
+  box-shadow: 0 0 28px rgba(116, 206, 99, 0.45), inset 0 0 14px rgba(255, 255, 255, 0.4);
+  display: grid;
+  place-items: center;
+  color: #0e2413;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.live-orb-wrapper:hover .live-orb-core {
+  transform: scale(1.06);
+}
+
+/* Orb States */
+.live-orb-wrapper.is-listening .live-orb-aura {
+  animation: orb-pulse-listening 1.2s infinite ease-in-out;
+  background: radial-gradient(circle, rgba(220, 75, 60, 0.35) 0%, rgba(180, 40, 30, 0) 70%);
+}
+
+.live-orb-wrapper.is-listening .live-orb-core {
+  background: radial-gradient(circle at 35% 35%, #ff8b7b 0%, #d84534 50%, #7d1c12 100%);
+  box-shadow: 0 0 32px rgba(235, 80, 65, 0.65), inset 0 0 16px rgba(255, 255, 255, 0.45);
+  animation: orb-pulse 0.8s infinite alternate;
+}
+
+.live-orb-wrapper.is-speaking .live-orb-core {
+  animation: orb-wave 1s infinite alternate ease-in-out;
+  box-shadow: 0 0 38px rgba(140, 235, 120, 0.75);
+}
+
+.live-orb-wrapper.is-thinking .live-orb-core {
+  animation: spin 1.8s linear infinite;
+  background: radial-gradient(circle at 35% 35%, #7bc7e2 0%, #346bd8 60%, #13247d 100%);
+}
+
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 0.95; }
+}
+
+@keyframes orb-pulse-listening {
+  0% { transform: scale(0.9); opacity: 0.5; }
+  50% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.5; }
+}
+
+@keyframes orb-pulse {
+  from { transform: scale(0.98); }
+  to { transform: scale(1.08); }
+}
+
+@keyframes orb-wave {
+  0% { transform: scale(0.96) rotate(-3deg); }
+  100% { transform: scale(1.1) rotate(3deg); }
+}
+
+.live-status-pill {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 14px;
+  background: #1e2a21;
+  border: 1px solid #2e4132;
+  font: 600 9px var(--mono);
+  color: #a7cca9;
+}
+
+.live-status-pill.recording {
+  background: #331d1a;
+  border-color: #5c2822;
+  color: #f7a69c;
+}
+
+/* Message Feed (ChatGPT Style) */
+.live-messages-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.live-message-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  max-width: 88%;
+}
+
+.live-message-row.user {
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.live-msg-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.live-message-row.assistant .live-msg-avatar {
+  background: #2b5536;
+  color: #b1e58a;
+  border: 1px solid #3d754b;
+}
+
+.live-message-row.user .live-msg-avatar {
+  background: #2d3844;
+  color: #a4c2e6;
+  border: 1px solid #435467;
+}
+
+.live-msg-bubble {
+  padding: 11px 15px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.live-message-row.assistant .live-msg-bubble {
+  background: #1b261f;
+  border: 1px solid #283a2d;
+  color: #dbe8dd;
+}
+
+.live-message-row.user .live-msg-bubble {
+  background: #233e2b;
+  border: 1px solid #325a3d;
+  color: #f0f7f1;
+}
+
+.live-msg-bubble pre {
+  margin: 8px 0 0;
+  padding: 9px;
+  border-radius: 6px;
+  background: #101712;
+  border: 1px solid #202e23;
+  color: #a8c4ab;
+  font: 9px/1.5 var(--mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Action Execution Card Inside Chat */
+.live-action-badge-card {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #16241a;
+  border: 1px solid #294631;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.live-action-badge-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: #cce4d0;
+}
+
+.live-action-badge-left strong {
+  color: #ffffff;
+}
+
+/* Suggestions Bar */
+.live-suggestions-bar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 18px;
+  overflow-x: auto;
+  border-top: 1px solid #1c2820;
+  background: #121914;
+}
+
+.live-suggestion-pill {
+  padding: 5px 11px;
+  border-radius: 16px;
+  border: 1px solid #26382a;
+  background: #18231b;
+  color: #8fa693;
+  font-size: 9px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.live-suggestion-pill:hover {
+  background: #233327;
+  color: #d1e5d4;
+  border-color: #38533c;
+}
+
+/* Chat Input Bar */
+.live-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-top: 1px solid #1f2c22;
+  background: #162018;
+}
+
+.live-chat-input {
+  flex: 1;
+  background: #101712;
+  border: 1px solid #253628;
+  border-radius: 22px;
+  padding: 10px 16px;
+  color: #ffffff;
+  font-size: 11px;
+  outline: none;
+}
+
+.live-chat-input:focus {
+  border-color: #3f6e49;
+  box-shadow: 0 0 0 2px rgba(63, 110, 73, 0.25);
+}
+
+.live-chat-input::placeholder {
+  color: #637766;
+}
+
+.live-mic-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: #25442e;
+  color: #b7e38e;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.live-mic-btn:hover {
+  background: #30583b;
+  transform: scale(1.05);
+}
+
+.live-mic-btn.active {
+  background: #d44534;
+  color: #ffffff;
+  animation: rec-blink 1s infinite alternate;
+}
+
+.live-send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: #33593d;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.live-send-btn:hover {
+  background: #3e6d4a;
+  transform: scale(1.05);
+}
+
+.live-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 650px) {
+  .live-modal-backdrop {
+    padding: 0;
+  }
+  .live-container {
+    width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    border: 0;
+  }
+  .live-visualizer-section {
+    padding: 16px 12px 10px;
+    min-height: 160px;
+  }
+  .live-orb-wrapper {
+    width: 96px;
+    height: 96px;
+  }
+  .live-orb-core {
+    width: 68px;
+    height: 68px;
+  }
+  .live-input-bar {
+    padding: 10px 12px;
+  }
+}
+

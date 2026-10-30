@@ -112,7 +112,7 @@ def model_request(prompt: dict, model: str):
     }
 
 
-def call_nebius(request_body: dict):
+def call_nebius_json(request_body: dict):
     if not API_KEY:
         raise RuntimeError("NEBIUS_API_KEY is not configured. Choose local-only analysis or add the key to your environment.")
     body = json.dumps(request_body, ensure_ascii=False).encode("utf-8")
@@ -132,7 +132,11 @@ def call_nebius(request_body: dict):
         raise RuntimeError(f"Token Factory is unavailable: {exc}") from exc
     content = response_data["choices"][0]["message"]["content"]
     content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content.strip(), flags=re.I)
-    parsed = json.loads(content)
+    return json.loads(content)
+
+
+def call_nebius(request_body: dict):
+    parsed = call_nebius_json(request_body)
     if isinstance(parsed, list):
         items = parsed
     else:

@@ -14,6 +14,12 @@ This guide describes features in the current local build. “Available” means 
 
 Threadline includes editable `Commitment scan`, `Daily reset`, and `Follow-up draft` skills. Users can inspect instructions, edit or disable skills, and rerun them on imported sources. A skill can suggest work but cannot grant itself new tool permissions.
 
+## Agent workflows
+
+The **Agent workflows** view accepts a natural-language task and asks Nemotron 3.5 Lightning to compose a typed workflow from Threadline's registered tools. The exact redacted compile request is shown before the user confirms model egress. The compiler receives no sources or memory. The validated workflow can be saved as a one-off task or reusable skill; a saved skill can be revised into a new version. Before every run, Threadline shows the tool sequence and side effects. The user approves a workflow plan containing writes; reminder and draft proposals then pass through per-action L0-L4, pause, quiet-hours, caps, review queue, and undo controls. Email remains unsent. The executor cannot invent tools, run arbitrary code, browse the web, or use external connectors. The public synthetic-data demo disables custom compilation to protect its hosted provider key. The preview path is implemented; a live compiler call and generated-plan quality are not yet measured.
+
+Workflow specs and runs are stored locally in SQLite. Per-node checkpoints support resume, idempotency keys prevent duplicate run creation, and deleting a source removes linked derived workflow receipts. See [the workflow runtime guide](agent-os/workflow-runtime.md).
+
 ## Local actions and autonomy
 
 Threadline can create local reminders, save unsent reply drafts, and export calendar `.ics` files. It never sends email or performs payments. The Permissions view provides:
@@ -41,4 +47,4 @@ While the host process is running, a local worker checks the import folder about
 
 ## Not included in this build
 
-Direct Gmail/Google Calendar/Outlook connectors, external message sending, payment actions, Nebius Serverless schedules, Hermes Agent runtime integration, an active NemoClaw/OpenShell sandbox, general natural-language policy compilation, encrypted database storage, and public hosting are not currently implemented or verified.
+Direct Gmail/Google Calendar/Outlook connectors, external message sending, payment actions, Nebius Serverless schedules, Hermes Agent runtime integration in the app, arbitrary-code/web workflow nodes, general natural-language policy compilation, encrypted database storage, and public hosting are not currently implemented. OpenShell's managed provider path has separate local verification but is not the current standalone app's process boundary.
